@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "149377784196",
+    "project_id": "cycleone-5a73e",
+    "storage_bucket": "cycleone-5a73e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:149377784196:android:8d0fd46056552675af25d1",
+        "android_client_info": {
+          "package_name": "com.cycleone.cycleoneapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAykYdvEMlU18fD0e-teATVSksfOFjzu9I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
