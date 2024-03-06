@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "313643300650",
+    "project_id": "decoded-petal-405715",
+    "storage_bucket": "decoded-petal-405715.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:313643300650:android:5375e02a9f4e360f99d053",
+        "android_client_info": {
+          "package_name": "com.cycleone.cycleoneapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "313643300650-cf3lpqte9hcufb59n9r4n2d4iupaspfg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cycleone.cycleoneapp",
+            "certificate_hash": "56bad6524e627fdee9cbc3c59337ae54788723ff"
+          }
+        },
+        {
+          "client_id": "313643300650-rcnb8qhq46395imaihk0nd2rkd74l9l2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7-hNzrGyF8RP1mo7lB_9t2cXM1KZUwsU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "313643300650-rcnb8qhq46395imaihk0nd2rkd74l9l2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
