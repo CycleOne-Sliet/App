@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.cycleone.cycleoneapp"
-        minSdk = 26
+        minSdk = 29
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -82,4 +82,7 @@ dependencies {
     implementation("com.google.firebase:firebase-functions")
     implementation("com.squareup.moshi:moshi:1.15.1")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.22")
+    implementation("io.ktor:ktor-client-core:2.3.9")
+    implementation("io.ktor:ktor-client-cio:2.3.9")
+    implementation("io.ktor:ktor-client-websockets:2.3.9")
 }

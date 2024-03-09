@@ -1,5 +1,7 @@
 package com.cycleone.cycleoneapp.ui.screens
 
+import android.net.MacAddress
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -79,26 +81,29 @@ class UnlockScreen {
                 Button(onClick = {
                     if (canScanQr) {
                         QrCode.create { qrCode ->
-                            Stand.Connect(qrCode, onResponse = { resp ->
-                                canScanQr = !resp.isUnlocked
-                                if (tryUnlock) {
-                                    tryUnlock = false
-                                    CloudFunctions.Token(resp.cycleId)?.let {
-                                        FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
-                                            Stand.Unlock(
-                                                it1, it
-                                            )
+                            Stand.Connect(MacAddress.fromBytes(qrCode))
+                            var resp = Stand.GetStatus()
+                            if (resp != null) {
+                                when(resp) {
+                                    is Response.Ok -> {canScanQr = !resp.isUnlocked
+                                    if (resp.cycleId != null) {
+                                        CloudFunctions.Token(resp.cycleId!!)?.let {
+                                            FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
+                                                resp = Stand.Unlock(
+                                                    it1, it
+                                                )
+                                            }
                                         }
-                                    }
+                                    }}
+
+                                    is Response.Err -> Log.e("StandError", resp.toString())
                                 }
-                            })
-                            tryUnlock = true
-                            Stand.GetStatus()
+
 
 
                         }
                     }
-                }, enabled = canScanQr) {
+                }}, enabled = canScanQr) {
                     Text("Scan  ")
                     Icon(Icons.Default.Search, "QR")
                 }
