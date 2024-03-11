@@ -1,9 +1,11 @@
 package com.cycleone.cycleoneapp.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -42,23 +44,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.R
+import com.cycleone.cycleoneapp.services.NavProvider
+import com.cycleone.cycleoneapp.services.getStandLocations
 import com.cycleone.cycleoneapp.ui.components.LocationCard
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
+import kotlinx.coroutines.runBlocking
 
 class Home {
     @Composable
     @Preview
     fun Create() {
-        val navController = rememberNavController()
+        val navController = NavProvider.controller
         val user = FirebaseAuth.getInstance().currentUser
+        Log.d("User", user.toString())
         if (user == null) {
             navController.navigate("/landing")
         }
-        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
+        val topScrollable = ScrollableState { x -> x }
+        Column(modifier = Modifier.fillMaxSize().scrollable(topScrollable, Orientation.Vertical), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
             Column() {
                 TextButton(
-                    onClick = {}, modifier = Modifier
+                    onClick = {navController.popBackStack()}, modifier = Modifier
                         .background(Color.Transparent)
                         .align(AbsoluteAlignment.Left)
                 ) {
@@ -85,7 +92,6 @@ class Home {
                     }
                 }
                 val horizontalState = rememberScrollState(0);
-                val locations = listOf("Narnia", "Hell", "Unsleeping City", "Nod", "Diagon Ally")
                 LazyRow(
                     modifier = Modifier
                         .scrollable(horizontalState, Orientation.Horizontal)
@@ -95,8 +101,8 @@ class Home {
                         Alignment.CenterHorizontally
                     )
                 ) {
-                    items(locations) { location ->
-                        LocationCard().Create(label = location)
+                    items(runBlocking {  getStandLocations() }) { location ->
+                        LocationCard().Create(location)
                     }
                 }
             }

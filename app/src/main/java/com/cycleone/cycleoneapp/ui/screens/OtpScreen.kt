@@ -18,14 +18,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.PrestyledText
 
 class OtpScreen {
     @Composable
     public fun Create() {
+        val navController = NavProvider.controller
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             TextButton(
-                onClick = {}, modifier = Modifier
+                onClick = {navController.popBackStack()}, modifier = Modifier
                     .background(Color.Transparent)
                     .align(AbsoluteAlignment.Left)
             ) {

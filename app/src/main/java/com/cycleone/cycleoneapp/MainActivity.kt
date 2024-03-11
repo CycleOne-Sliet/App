@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.services.CloudFunctions
+import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.services.Stand
 import com.cycleone.cycleoneapp.ui.screens.ForgotPassword
 import com.cycleone.cycleoneapp.ui.screens.Home
@@ -45,6 +46,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun BaseController(navController: NavHostController = rememberNavController()) {
+    NavProvider.controller = navController
     NavHost(navController = navController, startDestination = "/landing") {
         composable("/landing") {
             Landing().Create()

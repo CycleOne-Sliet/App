@@ -20,12 +20,19 @@ import android.net.wifi.aware.WifiAwareSession
 import androidx.core.content.ContextCompat.getSystemService
 import com.cycleone.cycleoneapp.services.QrCode.Companion.appContext
 import com.daveanthonythomas.moshipack.MoshiPack
+import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.remote.FirestoreChannel
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.KotlinJsonAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.ToJson
 import com.squareup.moshi.adapter
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -105,7 +112,7 @@ class Stand(
     companion object {
 
         lateinit var socket: Socket
-        val parser = Moshi.Builder().add(ResponseAdapter()).build().adapter<Response>()
+        val parser = Moshi.Builder().add(ResponseAdapter()).add(KotlinJsonAdapterFactory()).build().adapter<Response>()
         fun GetStatus() : Response? {
             socket.getOutputStream().write(Command.GetStatus().getData())
             val resp = socket.getInputStream().readBytes().toString()
@@ -139,3 +146,8 @@ class Stand(
         }
     }
 }
+
+suspend fun getStandLocations() : List<StandLocation> {
+      return Firebase.firestore.collection("stands").get().await().documents.map { d -> StandLocation(d["location"] as String, d["photo"] as String) }.toList()
+}
+data class StandLocation(val location: String, val photoUrl: String)

@@ -1,5 +1,6 @@
 package com.cycleone.cycleoneapp.ui.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -34,10 +35,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.R
+import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.PrestyledText
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.invoke
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 import kotlin.time.Duration
 
 class SignIn {
@@ -50,10 +58,10 @@ class SignIn {
         var password by remember {
             mutableStateOf("")
         }
-        var navController = rememberNavController()
+        var navController = NavProvider.controller
         val context = LocalContext.current
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            TextButton(onClick = {}, modifier = Modifier
+            TextButton(onClick = {navController.popBackStack()}, modifier = Modifier
                 .background(Color.Transparent)
                 .align(AbsoluteAlignment.Left)) {
                 Text("‹", fontSize = 50.sp, style = MaterialTheme.typography.titleLarge)
@@ -62,7 +70,7 @@ class SignIn {
             Text("Welcome Back", style = MaterialTheme.typography.titleLarge)
             Text("login to access your account", style = MaterialTheme.typography.labelMedium)
             PrestyledText().Regular(placeholder = "Enter your Email", onChange = {x -> email = x}, label = "Mail", icon = Icons.Default.Email)
-            PrestyledText().Password(placeholder = "Password", onChange = {x -> email = x}, label = "Password", icon = Icons.Default.Lock)
+            PrestyledText().Password(placeholder = "Password", onChange = {x -> password = x}, label = "Password", icon = Icons.Default.Lock)
                 Text("Forgot Password?",
 
                     modifier = Modifier
@@ -70,12 +78,26 @@ class SignIn {
                         .align(AbsoluteAlignment.Left),
                     )
             Button(onClick = {
-                val authResult = FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
-               if (authResult.isSuccessful) {
-                   navController.navigate("/home")
-               } else {
-                   Toast.makeText(context, authResult.exception!!.message, Toast.LENGTH_SHORT).show()
-               }
+                        Log.d("Initiating ", "Logging In")
+                        val authResult =
+                            FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password).addOnFailureListener {
+                                Toast.makeText(
+                                    context,
+                                    "Error while doing authentication$it",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }.addOnSuccessListener { authResult ->
+
+                                Log.d("Finished", "Logging In")
+                                if (authResult == null) {
+                                    Toast.makeText(
+                                        context,
+                                        "Error while doing authentication",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    navController.navigate("/home")
+                            }  }
                              }, modifier = Modifier.fillMaxWidth(0.75F)
                 ,shape = RoundedCornerShape(15.dp)
 

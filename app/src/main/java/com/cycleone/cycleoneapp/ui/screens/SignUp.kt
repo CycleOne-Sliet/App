@@ -1,5 +1,7 @@
 package com.cycleone.cycleoneapp.ui.screens
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -28,12 +30,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.modifier.modifierLocalConsumer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.R
+import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.PrestyledText
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
@@ -44,7 +48,7 @@ class SignUp {
     @Composable
     @Preview
     public fun Create() {
-        val navController = rememberNavController()
+        val navController = NavProvider.controller
         var name by remember {
             mutableStateOf("")
         }
@@ -58,8 +62,10 @@ class SignUp {
             mutableStateOf("")
         }
 
+        val context = LocalContext.current
+
        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-           TextButton(onClick = {}, modifier = Modifier
+           TextButton(onClick = {navController.popBackStack()}, modifier = Modifier
                .background(Color.Transparent)
                .align(AbsoluteAlignment.Left)) {
                Text("‹", fontSize = 50.sp, style = MaterialTheme.typography.titleLarge)
@@ -76,10 +82,11 @@ class SignUp {
                Text("By checking the box, you agree to our Terms and Conditions.", style = MaterialTheme.typography.labelSmall)
            }
            Button(onClick = {
-                            val authResult = FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
-                            if (authResult.isSuccessful) {
-                                authResult.result?.user?.updateProfile(UserProfileChangeRequest.Builder().setDisplayName(name).build())
-                                navController.navigate("/home")
+                            val authResult = FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password).addOnSuccessListener { authResult ->
+                                    authResult.user?.updateProfile(UserProfileChangeRequest.Builder().setDisplayName(name).build())
+                                    navController.navigate("/home")
+                                }.addOnFailureListener {
+                                    Toast.makeText(context, "Error while creating account: $it", Toast.LENGTH_LONG).show()
                             }
 
            }, modifier = Modifier.fillMaxWidth(0.75F), shape = RoundedCornerShape(15.dp)

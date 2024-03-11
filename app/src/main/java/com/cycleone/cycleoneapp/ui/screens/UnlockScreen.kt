@@ -30,6 +30,7 @@ import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.CloudFunctions
+import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.services.QrCode
 import com.cycleone.cycleoneapp.services.Response
 import com.cycleone.cycleoneapp.services.Stand
@@ -59,14 +61,16 @@ class UnlockScreen {
         var tryUnlock by remember {
             mutableStateOf(false)
         }
+        val context = LocalContext.current
         if (shouldScanQr){
             shouldScanQr = false
             QrCode.create(onSuccess = {code -> Stand})
         }
+        val navController = NavProvider.controller
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 TextButton(
-                    onClick = {}, modifier = Modifier
+                    onClick = {navController.popBackStack()}, modifier = Modifier
                         .background(Color.Transparent)
                         .align(AbsoluteAlignment.Left)
                 ) {
@@ -80,6 +84,7 @@ class UnlockScreen {
                 )
                 Button(onClick = {
                     if (canScanQr) {
+                        QrCode.appContext = context
                         QrCode.create { qrCode ->
                             Stand.Connect(MacAddress.fromBytes(qrCode))
                             var resp = Stand.GetStatus()
