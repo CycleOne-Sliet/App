@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cycleone.cycleoneapp.R
@@ -45,7 +46,7 @@ class PrestyledText() {
     @Composable
     public fun Password(placeholder: String = "",onChange: (String) -> Unit = {}, enabled: Boolean = true, label: String = "", icon: ImageVector? = null) {
         var c by remember{mutableStateOf("")}
-        OutlinedTextField(value = c, onValueChange = {x: String -> c = "*".repeat(x.length); onChange(x)}, placeholder = {Text(placeholder)}, enabled = enabled, label = {Text(label)}, trailingIcon = {icon?.let {Image(
+        OutlinedTextField(value = c, visualTransformation = PasswordVisualTransformation(), onValueChange = {x: String -> c = x; onChange(x)}, placeholder = {Text(placeholder)}, enabled = enabled, label = {Text(label)}, trailingIcon = {icon?.let {Image(
             it, contentDescription = "Icon" )}})
     }
 

@@ -2,6 +2,7 @@ package com.cycleone.cycleoneapp.ui.screens
 
 import android.net.MacAddress
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -31,11 +32,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.LifecycleOwner
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.CloudFunctions
 import com.cycleone.cycleoneapp.services.NavProvider
@@ -44,8 +47,19 @@ import com.cycleone.cycleoneapp.services.Response
 import com.cycleone.cycleoneapp.services.Stand
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.runBlocking
 import okio.ByteString.Companion.decodeBase64
+import okio.ByteString.Companion.decodeHex
+import java.net.Socket
 
+fun decodeHexFromStr(hex: String): ByteArray {
+    if (hex.length % 2 != 0) {
+        return byteArrayOf(0)
+    }
+    return ByteArray(hex.length / 2) {
+        Integer.parseInt(hex, it * 2, (it + 1) * 2, 16).toByte()
+    }
+}
 class UnlockScreen {
     @Composable
     fun Create() {
@@ -61,11 +75,8 @@ class UnlockScreen {
         var tryUnlock by remember {
             mutableStateOf(false)
         }
+        val lifecycleOwner = LocalLifecycleOwner.current
         val context = LocalContext.current
-        if (shouldScanQr){
-            shouldScanQr = false
-            QrCode.create(onSuccess = {code -> Stand})
-        }
         val navController = NavProvider.controller
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -83,37 +94,63 @@ class UnlockScreen {
                     modifier = Modifier.padding(bottom = 20.dp)
                 )
                 Button(onClick = {
-                    if (canScanQr) {
-                        QrCode.appContext = context
-                        QrCode.create { qrCode ->
-                            Stand.Connect(MacAddress.fromBytes(qrCode))
-                            var resp = Stand.GetStatus()
-                            if (resp != null) {
-                                when(resp) {
-                                    is Response.Ok -> {canScanQr = !resp.isUnlocked
-                                    if (resp.cycleId != null) {
-                                        CloudFunctions.Token(resp.cycleId!!)?.let {
-                                            FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
-                                                resp = Stand.Unlock(
-                                                    it1, it
-                                                )
-                                            }
-                                        }
-                                    }}
-
-                                    is Response.Err -> Log.e("StandError", resp.toString())
-                                }
-
-
-
-                        }
-                    }
-                }}, enabled = canScanQr) {
+                    shouldScanQr = true;
+                }, enabled = canScanQr) {
                     Text("Scan  ")
                     Icon(Icons.Default.Search, "QR")
                 }
                 Text("Cycle not being used", modifier = Modifier.padding(top = 20.dp))
                 Text("Time since last unlock: ")
+
+                if (shouldScanQr && canScanQr) {
+                    QrCode.startCamera(lifecycleOwner = lifecycleOwner, onSuccess = { qrCode ->
+                        Log.d("qrCode", qrCode)
+                        Stand.appContext = context
+                        shouldScanQr = false
+                        val macHex = decodeHexFromStr(qrCode)
+                        Log.d("QrSize", macHex.size.toString())
+                        if (macHex.size != 6) {
+                            Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
+                            return@startCamera
+                        }
+                        val mac: MacAddress = MacAddress.fromBytes(macHex);
+                        print(mac);
+                        Stand.Connect(
+                            mac
+                        ) { socket: Socket ->
+                            Log.d("Stand", "Connecting")
+                            var resp = Stand.GetStatus(socket)
+                            print(resp)
+                            if (resp != null) {
+                                when (resp) {
+                                    is Response.Ok -> {
+                                        canScanQr = !resp.isUnlocked
+                                        if (resp.cycleId != null) {
+                                            val cycleId = resp.cycleId
+                                            runBlocking {
+                                                CloudFunctions.Token(cycleId!!)?.let {
+                                                    FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
+                                                        resp = Stand.Unlock(
+                                                            socket,
+                                                            it1, it
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    is Response.Err -> Log.e(
+                                        "StandError",
+                                        resp.toString()
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    )
+                }
+
             }
             Row(modifier = Modifier
                 .fillMaxWidth()

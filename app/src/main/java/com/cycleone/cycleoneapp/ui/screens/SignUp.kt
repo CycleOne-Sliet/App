@@ -1,6 +1,7 @@
 package com.cycleone.cycleoneapp.ui.screens
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -82,6 +83,7 @@ class SignUp {
                Text("By checking the box, you agree to our Terms and Conditions.", style = MaterialTheme.typography.labelSmall)
            }
            Button(onClick = {
+               Log.d("Password", password)
                             val authResult = FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password).addOnSuccessListener { authResult ->
                                     authResult.user?.updateProfile(UserProfileChangeRequest.Builder().setDisplayName(name).build())
                                     navController.navigate("/home")

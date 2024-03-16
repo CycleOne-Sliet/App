@@ -70,7 +70,11 @@ class SignIn {
             Text("Welcome Back", style = MaterialTheme.typography.titleLarge)
             Text("login to access your account", style = MaterialTheme.typography.labelMedium)
             PrestyledText().Regular(placeholder = "Enter your Email", onChange = {x -> email = x}, label = "Mail", icon = Icons.Default.Email)
-            PrestyledText().Password(placeholder = "Password", onChange = {x -> password = x}, label = "Password", icon = Icons.Default.Lock)
+            PrestyledText().Password(placeholder = "Password", onChange = {x ->
+                password = x
+                Log.d("Password",password)
+
+                                                                          }, label = "Password", icon = Icons.Default.Lock)
                 Text("Forgot Password?",
 
                     modifier = Modifier
@@ -79,6 +83,10 @@ class SignIn {
                     )
             Button(onClick = {
                         Log.d("Initiating ", "Logging In")
+                Log.i("Creds", "Username:  $email")
+                Log.i("Creds", "Password:  $password")
+                print(email)
+                print(password)
                         val authResult =
                             FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password).addOnFailureListener {
                                 Toast.makeText(
