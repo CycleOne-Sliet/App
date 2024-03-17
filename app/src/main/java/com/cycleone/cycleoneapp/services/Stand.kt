@@ -26,25 +26,41 @@ import java.nio.charset.Charset
 
 
 sealed class Command {
-    data class Unlock(val user:String, val serverRespToken: ByteArray) : Command();
+    data class Unlock(val user:String, val serverRespToken: ByteArray) : Command() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Unlock
+
+            if (user != other.user) return false
+            return serverRespToken.contentEquals(other.serverRespToken)
+        }
+
+        override fun hashCode(): Int {
+            var result = user.hashCode()
+            result = 31 * result + serverRespToken.contentHashCode()
+            return result
+        }
+    };
     class GetStatus() : Command();
     fun getId(): Byte {
         when (this) {
-            is Command.Unlock -> {return 'U'.toByte()}
-            is Command.GetStatus -> {return 'G'.code.toByte()}
+            is Unlock -> {return 'U'.code.toByte()}
+            is GetStatus -> {return 'G'.code.toByte()}
         }
     }
     fun getEncodedSize(): Int {
         when (this) {
-            is Command.Unlock -> return user.toByteArray().size + serverRespToken.size + 3
-            is Command.GetStatus -> return 1
+            is Unlock -> return user.toByteArray().size + serverRespToken.size + 3
+            is GetStatus -> return 1
         }
     }
     fun getData(): ByteArray {
         var bytes = ByteArray(this.getEncodedSize())
         bytes[0] = this.getId()
         when (this) {
-            is Command.Unlock -> {
+            is Unlock -> {
                 val userBytes = user.toByteArray()
                 bytes[1] = userBytes.size.toByte()
                 userBytes.copyInto(bytes, 2)
@@ -52,7 +68,7 @@ sealed class Command {
                 serverRespToken.copyInto(bytes, userBytes.size + 3)
                 return bytes
             }
-            is Command.GetStatus -> {
+            is GetStatus -> {
             }
         }
         return bytes
@@ -98,16 +114,17 @@ class Stand(
 
         val parser = Moshi.Builder().add(ResponseAdapter()).add(KotlinJsonAdapterFactory()).build().adapter<Response>()
         fun GetStatus(socket: Socket) : Response? {
-            if (!socket.isConnected) {
-                socket.connect(InetSocketAddress("10.10.10.10", 80))
-                Log.d("isBound", socket.isBound.toString())
-            }
-            if (!socket.isConnected) {
-                return null
-            }
 
+                if (!socket.isConnected) {
+                    socket.connect(InetSocketAddress("10.10.10.10", 80))
+                }
                 socket.getOutputStream().write(Command.GetStatus().getData())
-                val resp = socket.getInputStream().readBytes().toString(Charset.defaultCharset())
+                val inputStream = socket.getInputStream()
+                val respLen = inputStream.read()
+                val respBytes = ByteArray(respLen)
+                inputStream.read(respBytes)
+                val resp = respBytes.toString(Charset.defaultCharset())
+
                 Log.d("StatusResp", resp)
             try {
 
@@ -148,11 +165,9 @@ class Stand(
         }
 
         fun Unlock(socket: Socket, uid:String, serverRespToken: ByteArray): Response? {
-            Log.d("Unlock", "Starting unlock")
+
             if (!socket.isConnected) {
-                Log.d("Unlock", "Connecting again")
                 socket.connect(InetSocketAddress("10.10.10.10", 80))
-                Log.d("isBound", socket.isBound.toString())
             }
             val data = Command.Unlock(uid, serverRespToken).getData()
 
@@ -160,9 +175,12 @@ class Stand(
             val outputStream = socket.getOutputStream()
             outputStream.write(data)
             outputStream.flush()
-            val resp = socket.getInputStream().reader().readText()
-            Log.d("Response", "Got the resp")
-            Log.d("Response:", resp)
+
+            val inputStream = socket.getInputStream()
+            val respLen = inputStream.read()
+            val respBytes = ByteArray(respLen)
+            inputStream.read(respBytes)
+            val resp = respBytes.toString(Charset.defaultCharset())
             try {
                 return parser.fromJson(resp)
             } catch (err: Throwable) {

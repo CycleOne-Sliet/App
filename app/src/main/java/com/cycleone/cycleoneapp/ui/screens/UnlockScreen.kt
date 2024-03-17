@@ -51,16 +51,18 @@ import kotlinx.coroutines.runBlocking
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.decodeHex
 import java.net.Socket
+import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
     if (hex.length % 2 != 0) {
-        return byteArrayOf(0)
+        throw InvalidParameterException("Fking wrong length of hex: ${hex.length}")
     }
     return ByteArray(hex.length / 2) {
         Integer.parseInt(hex, it * 2, (it + 1) * 2, 16).toByte()
     }
 }
 class UnlockScreen {
+    @OptIn(ExperimentalStdlibApi::class)
     @Composable
     fun Create() {
         var shouldScanQr by remember {
@@ -121,6 +123,7 @@ class UnlockScreen {
                             Log.d("Stand", "Connecting")
                             var resp = Stand.GetStatus(socket)
                             print(resp)
+                            // This stair makes me want to touch an actual, live Jacob's ladder
                             if (resp != null) {
                                 when (resp) {
                                     is Response.Ok -> {
@@ -128,12 +131,15 @@ class UnlockScreen {
                                         if (resp.cycleId != null) {
                                             val cycleId = resp.cycleId
                                             runBlocking {
+                                                Log.d("CycleId Before Function Call", cycleId.toString())
                                                 CloudFunctions.Token(cycleId!!)?.let {
                                                     FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
-                                                        resp = Stand.Unlock(
-                                                            socket,
-                                                            it1, it
-                                                        )
+                                                            Log.d("Uid", it1)
+                                                            Log.d("serverResp", it.toHexString())
+                                                            resp = Stand.Unlock(
+                                                                socket,
+                                                                it1, it
+                                                            )
                                                     }
                                                 }
                                             }

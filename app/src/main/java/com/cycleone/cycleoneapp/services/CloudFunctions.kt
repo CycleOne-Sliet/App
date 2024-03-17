@@ -14,17 +14,19 @@ class CloudFunctions {
         fun Connect() {
             functions = FirebaseFunctions.getInstance()
         }
+        @OptIn(ExperimentalStdlibApi::class)
         suspend fun Token(cycle_id: String): ByteArray? {
             try {
                 val request = hashMapOf(
                     "cycle_id" to cycle_id
                 )
+                Log.d("Token CycleId", cycle_id)
+                Log.d("CycleId in hashmap", request["cycle_id"] as String)
                 val result = functions.getHttpsCallable("get_token").call(request)
                     .await()
                 val data = result.data as Map<*, *>
-                print(data)
-                Log.d("FunctionsResp", data["token"] as String)
-                return decodeHexFromStr(data["token"] as String)
+                val token = (data["token"] as String).removePrefix("b'").removeSuffix("'")
+                return decodeHexFromStr(token)
             } catch (err: Throwable) {
                 Log.e("Functions Fked", "${err.message} ${err.stackTrace} $err")
                 return null
