@@ -11,6 +11,7 @@ import android.net.NetworkRequest
 import android.net.wifi.WifiNetworkSpecifier
 import android.net.wifi.aware.WifiAwareSession
 import android.util.Log
+import android.widget.Toast
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.squareup.moshi.FromJson
@@ -115,7 +116,7 @@ class Stand(
         val parser = Moshi.Builder().add(ResponseAdapter()).add(KotlinJsonAdapterFactory()).build().adapter<Response>()
         fun GetStatus(socket: Socket) : Response? {
 
-                if (!socket.isConnected) {
+                if (!socket.isConnected || socket.isClosed) {
                     socket.connect(InetSocketAddress("10.10.10.10", 80))
                 }
                 socket.getOutputStream().write(Command.GetStatus().getData())
@@ -155,6 +156,7 @@ class Stand(
                 override fun onUnavailable() {
                     super.onUnavailable()
                     Log.e("Unavailable", "Network is unavailable")
+                    Toast.makeText(appContext, "Turn on WiFi, or stand is offline", Toast.LENGTH_LONG).show()
                 }
 
                 override fun onLosing(network: Network, maxMsToLive: Int) {
@@ -166,7 +168,7 @@ class Stand(
 
         fun Unlock(socket: Socket, uid:String, serverRespToken: ByteArray): Response? {
 
-            if (!socket.isConnected) {
+            if (!socket.isConnected || socket.isClosed) {
                 socket.connect(InetSocketAddress("10.10.10.10", 80))
             }
             val data = Command.Unlock(uid, serverRespToken).getData()

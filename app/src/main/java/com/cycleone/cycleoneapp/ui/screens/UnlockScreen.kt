@@ -47,6 +47,8 @@ import com.cycleone.cycleoneapp.services.Response
 import com.cycleone.cycleoneapp.services.Stand
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.decodeHex
@@ -77,6 +79,12 @@ class UnlockScreen {
         var tryUnlock by remember {
             mutableStateOf(false)
         }
+        var startedQrScanning by remember {
+            mutableStateOf(false)
+        }
+        var startedConnecting by remember {
+            mutableStateOf(false)
+        }
         val lifecycleOwner = LocalLifecycleOwner.current
         val context = LocalContext.current
         val navController = NavProvider.controller
@@ -105,7 +113,16 @@ class UnlockScreen {
                 Text("Time since last unlock: ")
 
                 if (shouldScanQr && canScanQr) {
-                    QrCode.startCamera(lifecycleOwner = lifecycleOwner, onSuccess = { qrCode ->
+                    QrCode.startCamera(lifecycleOwner = lifecycleOwner, onSuccess = { qrCode -> runBlocking {
+                        if (startedQrScanning) {
+                            return@runBlocking
+                        }
+                        startedQrScanning = true
+                        launch {
+                            delay(3000)
+                            startedQrScanning = false
+                        }
+
                         Log.d("qrCode", qrCode)
                         Stand.appContext = context
                         shouldScanQr = false
@@ -113,13 +130,21 @@ class UnlockScreen {
                         Log.d("QrSize", macHex.size.toString())
                         if (macHex.size != 6) {
                             Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
-                            return@startCamera
+                            return@runBlocking
                         }
                         val mac: MacAddress = MacAddress.fromBytes(macHex);
                         print(mac);
                         Stand.Connect(
                             mac
                         ) { socket: Socket ->
+                            if (startedConnecting) {
+                                return@Connect
+                            }
+                            startedConnecting = true
+                            launch {
+                                delay(2000)
+                                startedConnecting = false
+                            }
                             Log.d("Stand", "Connecting")
                             var resp = Stand.GetStatus(socket)
                             print(resp)
@@ -127,6 +152,7 @@ class UnlockScreen {
                             if (resp != null) {
                                 when (resp) {
                                     is Response.Ok -> {
+                                        Toast.makeText(context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG).show()
                                         canScanQr = !resp.isUnlocked
                                         if (resp.cycleId != null) {
                                             val cycleId = resp.cycleId
@@ -140,20 +166,26 @@ class UnlockScreen {
                                                                 socket,
                                                                 it1, it
                                                             )
+                                                            Toast.makeText(context, "Successfully Unlocked the stand", Toast.LENGTH_LONG).show()
+                                                            startedQrScanning = false
+                                                            startedConnecting = false
                                                     }
                                                 }
                                             }
                                         }
                                     }
 
-                                    is Response.Err -> Log.e(
-                                        "StandError",
-                                        resp.toString()
-                                    )
+                                    is Response.Err -> {
+                                        Log.e(
+                                            "StandError",
+                                            resp.toString()
+                                        )
+                                        Toast.makeText(context, (resp as Response.Err).error, Toast.LENGTH_LONG).show()
+                                    }
                                 }
                             }
                         }
-                    }
+                    }}
                     )
                 }
 
