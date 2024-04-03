@@ -2,6 +2,7 @@ package com.cycleone.cycleoneapp.services
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.MacAddress
 import android.net.Network
@@ -10,8 +11,10 @@ import android.net.NetworkCapabilities.TRANSPORT_WIFI
 import android.net.NetworkRequest
 import android.net.wifi.WifiNetworkSpecifier
 import android.net.wifi.aware.WifiAwareSession
+import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
+import androidx.core.content.ContextCompat.startActivity
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.squareup.moshi.FromJson
@@ -124,7 +127,8 @@ class Stand(
     companion object {
         lateinit var appContext: Context
 
-        val parser = Moshi.Builder().add(ResponseAdapter()).add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
+        val parser = Moshi.Builder().add(ResponseAdapter())
+            .add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
             .adapter<Response>()
 
         fun GetStatus(socket: Socket): Response? {
@@ -163,8 +167,8 @@ class Stand(
 
             val networkRequest = NetworkRequest.Builder().addTransportType(TRANSPORT_WIFI)
                 .setNetworkSpecifier(wifiNetworkSpecifier).removeCapability(
-                NET_CAPABILITY_INTERNET
-            ).build()
+                    NET_CAPABILITY_INTERNET
+                ).build()
             val connectivityManager =
                 appContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
             connectivityManager.requestNetwork(
@@ -185,6 +189,7 @@ class Stand(
                             "Turn on WiFi, or stand is offline",
                             Toast.LENGTH_LONG
                         ).show()
+                        startActivity(appContext, Intent(Settings.ACTION_WIFI_SETTINGS), null)
                     }
 
                 })
