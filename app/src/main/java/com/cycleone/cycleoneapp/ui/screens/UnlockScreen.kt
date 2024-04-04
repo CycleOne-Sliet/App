@@ -141,13 +141,14 @@ class UnlockScreen {
                             ).show()
                         }
                     }
+
                     wifiPermissionState.launchPermissionRequest()
 
                     if (!wifiPermissionState.status.isGranted) {
                         if (wifiPermissionState.status.shouldShowRationale) {
                             Toast.makeText(
                                 context,
-                                "Camera permission is needed to scan\nthe qr codes of stand",
+                                "Wifi permission is needed to scan\nthe qr codes of stand",
                                 Toast.LENGTH_LONG
                             ).show()
                         } else {
