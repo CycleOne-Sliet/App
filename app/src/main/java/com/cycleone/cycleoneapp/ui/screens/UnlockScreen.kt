@@ -1,5 +1,6 @@
 package com.cycleone.cycleoneapp.ui.screens
 
+import android.Manifest
 import android.net.MacAddress
 import android.util.Log
 import android.widget.Toast
@@ -38,20 +39,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.LifecycleOwner
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.CloudFunctions
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.services.QrCode
 import com.cycleone.cycleoneapp.services.Response
 import com.cycleone.cycleoneapp.services.Stand
-import com.google.firebase.Firebase
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import okio.ByteString.Companion.decodeBase64
-import okio.ByteString.Companion.decodeHex
 import java.net.Socket
 import java.security.InvalidParameterException
 
@@ -63,8 +64,9 @@ fun decodeHexFromStr(hex: String): ByteArray {
         Integer.parseInt(hex, it * 2, (it + 1) * 2, 16).toByte()
     }
 }
+
 class UnlockScreen {
-    @OptIn(ExperimentalStdlibApi::class)
+    @OptIn(ExperimentalStdlibApi::class, ExperimentalPermissionsApi::class)
     @Composable
     fun Create() {
         var shouldScanQr by remember {
@@ -74,7 +76,12 @@ class UnlockScreen {
             mutableStateOf(true)
         }
         var st by remember {
-            mutableStateOf(Stand(onUnavailable = {canScanQr = false}, onAttach = {canScanQr = true}, onAttachFailure = {canScanQr = false}))
+            mutableStateOf(
+                Stand(
+                    onUnavailable = { canScanQr = false },
+                    onAttach = { canScanQr = true },
+                    onAttachFailure = { canScanQr = false })
+            )
         }
         var tryUnlock by remember {
             mutableStateOf(false)
@@ -85,13 +92,27 @@ class UnlockScreen {
         var startedConnecting by remember {
             mutableStateOf(false)
         }
+        val wifiPermissionState = rememberPermissionState(
+            Manifest.permission.CHANGE_WIFI_STATE
+        )
+
+        val cameraPermissionState = rememberPermissionState(
+            Manifest.permission.CAMERA
+        )
         val lifecycleOwner = LocalLifecycleOwner.current
         val context = LocalContext.current
         val navController = NavProvider.controller
-        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
-            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 TextButton(
-                    onClick = {navController.popBackStack()}, modifier = Modifier
+                    onClick = { navController.popBackStack() }, modifier = Modifier
                         .background(Color.Transparent)
                         .align(AbsoluteAlignment.Left)
                 ) {
@@ -104,7 +125,43 @@ class UnlockScreen {
                     modifier = Modifier.padding(bottom = 20.dp)
                 )
                 Button(onClick = {
-                    shouldScanQr = true;
+                    cameraPermissionState.launchPermissionRequest()
+
+                    if (!cameraPermissionState.status.isGranted) {
+                        if (cameraPermissionState.status.shouldShowRationale) {
+                            Toast.makeText(
+                                context,
+                                "Camera permission is needed to scan\nthe qr codes of stand",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Please grant the permission for camera in the settings",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+
+                    if (!wifiPermissionState.status.isGranted) {
+                        if (wifiPermissionState.status.shouldShowRationale) {
+                            Toast.makeText(
+                                context,
+                                "Camera permission is needed to scan\nthe qr codes of stand",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Please grant the permission for wifi in the settings",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+
+
+                    shouldScanQr =
+                        cameraPermissionState.status.isGranted && wifiPermissionState.status.isGranted
                 }, enabled = canScanQr) {
                     Text("Scan  ")
                     Icon(Icons.Default.Search, "QR")
@@ -113,86 +170,105 @@ class UnlockScreen {
                 Text("Time since last unlock: ")
 
                 if (shouldScanQr && canScanQr) {
-                    QrCode.startCamera(lifecycleOwner = lifecycleOwner, onSuccess = { qrCode -> runBlocking {
-                        if (startedQrScanning) {
-                            return@runBlocking
-                        }
-                        startedQrScanning = true
-                        launch {
-                            delay(3000)
-                            startedQrScanning = false
-                        }
-
-                        Log.d("qrCode", qrCode)
-                        Stand.appContext = context
-                        shouldScanQr = false
-                        val macHex = decodeHexFromStr(qrCode)
-                        Log.d("QrSize", macHex.size.toString())
-                        if (macHex.size != 6) {
-                            Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
-                            return@runBlocking
-                        }
-                        val mac: MacAddress = MacAddress.fromBytes(macHex);
-                        print(mac);
-                        Stand.Connect(
-                            mac
-                        ) { socket: Socket ->
-                            if (startedConnecting) {
-                                return@Connect
+                    QrCode.startCamera(lifecycleOwner = lifecycleOwner, onSuccess = { qrCode ->
+                        runBlocking {
+                            if (startedQrScanning) {
+                                return@runBlocking
                             }
-                            startedConnecting = true
+                            startedQrScanning = true
                             launch {
-                                delay(2000)
-                                startedConnecting = false
+                                delay(3000)
+                                startedQrScanning = false
                             }
-                            Log.d("Stand", "Connecting")
-                            var resp = Stand.GetStatus(socket)
-                            print(resp)
-                            // This stair makes me want to touch an actual, live Jacob's ladder
-                            if (resp != null) {
-                                when (resp) {
-                                    is Response.Ok -> {
-                                        Toast.makeText(context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG).show()
-                                        canScanQr = !resp.isUnlocked
-                                        if (resp.cycleId != null) {
-                                            val cycleId = resp.cycleId
-                                            runBlocking {
-                                                Log.d("CycleId Before Function Call", cycleId.toString())
-                                                CloudFunctions.Token(cycleId!!)?.let {
-                                                    FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
+
+                            Log.d("qrCode", qrCode)
+                            Stand.appContext = context
+                            shouldScanQr = false
+                            val macHex = decodeHexFromStr(qrCode)
+                            Log.d("QrSize", macHex.size.toString())
+                            if (macHex.size != 6) {
+                                Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
+                                return@runBlocking
+                            }
+                            val mac: MacAddress = MacAddress.fromBytes(macHex)
+                            print(mac)
+                            Stand.Connect(
+                                mac
+                            ) { socket: Socket ->
+                                if (startedConnecting) {
+                                    return@Connect
+                                }
+                                startedConnecting = true
+                                launch {
+                                    delay(2000)
+                                    startedConnecting = false
+                                }
+                                Log.d("Stand", "Connecting")
+                                var resp = Stand.GetStatus(socket)
+                                print(resp)
+                                // This stair makes me want to touch an actual, live Jacob's ladder
+                                if (resp != null) {
+                                    when (resp) {
+                                        is Response.Ok -> {
+                                            Toast.makeText(
+                                                context,
+                                                "${resp.cycleId} : ${resp.isUnlocked}",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                            canScanQr = !resp.isUnlocked
+                                            if (resp.cycleId != null) {
+                                                val cycleId = resp.cycleId
+                                                runBlocking {
+                                                    Log.d(
+                                                        "CycleId Before Function Call",
+                                                        cycleId.toString()
+                                                    )
+                                                    CloudFunctions.Token(cycleId!!)?.let {
+                                                        FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
                                                             Log.d("Uid", it1)
                                                             Log.d("serverResp", it.toHexString())
                                                             resp = Stand.Unlock(
                                                                 socket,
                                                                 it1, it
                                                             )
-                                                            Toast.makeText(context, "Successfully Unlocked the stand", Toast.LENGTH_LONG).show()
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Successfully Unlocked the stand",
+                                                                Toast.LENGTH_LONG
+                                                            ).show()
                                                             startedQrScanning = false
                                                             startedConnecting = false
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
-                                    }
 
-                                    is Response.Err -> {
-                                        Log.e(
-                                            "StandError",
-                                            resp.toString()
-                                        )
-                                        Toast.makeText(context, (resp as Response.Err).error, Toast.LENGTH_LONG).show()
+                                        is Response.Err -> {
+                                            Log.e(
+                                                "StandError",
+                                                resp.toString()
+                                            )
+                                            Toast.makeText(
+                                                context,
+                                                (resp as Response.Err).error,
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
                                     }
                                 }
                             }
                         }
-                    }}
+                    }
                     )
                 }
 
             }
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp), horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 OutlinedButton(onClick = {}) {
                     Icon(Icons.Default.Person, "Profile")
                 }
@@ -209,6 +285,6 @@ class UnlockScreen {
     @Composable
     @Preview
     fun Preview() {
-       Create()
+        Create()
     }
 }
