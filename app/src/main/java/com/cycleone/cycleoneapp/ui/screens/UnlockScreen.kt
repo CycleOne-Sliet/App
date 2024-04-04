@@ -126,7 +126,6 @@ class UnlockScreen {
                 )
                 Button(onClick = {
                     cameraPermissionState.launchPermissionRequest()
-
                     if (!cameraPermissionState.status.isGranted) {
                         if (cameraPermissionState.status.shouldShowRationale) {
                             Toast.makeText(
@@ -142,6 +141,7 @@ class UnlockScreen {
                             ).show()
                         }
                     }
+                    wifiPermissionState.launchPermissionRequest()
 
                     if (!wifiPermissionState.status.isGranted) {
                         if (wifiPermissionState.status.shouldShowRationale) {
