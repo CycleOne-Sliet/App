@@ -47,6 +47,7 @@ import com.cycleone.cycleoneapp.services.Response
 import com.cycleone.cycleoneapp.services.Stand
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import com.google.firebase.auth.FirebaseAuth
@@ -92,8 +93,8 @@ class UnlockScreen {
         var startedConnecting by remember {
             mutableStateOf(false)
         }
-        val wifiPermissionState = rememberPermissionState(
-            Manifest.permission.CHANGE_WIFI_STATE
+        val wifiPermissionState = rememberMultiplePermissionsState(
+            listOf(Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.CHANGE_WIFI_STATE)
         )
 
         val cameraPermissionState = rememberPermissionState(
@@ -142,10 +143,9 @@ class UnlockScreen {
                         }
                     }
 
-                    wifiPermissionState.launchPermissionRequest()
-
-                    if (!wifiPermissionState.status.isGranted) {
-                        if (wifiPermissionState.status.shouldShowRationale) {
+                    wifiPermissionState.launchMultiplePermissionRequest()
+                    if (!wifiPermissionState.allPermissionsGranted) {
+                        if (wifiPermissionState.shouldShowRationale) {
                             Toast.makeText(
                                 context,
                                 "Wifi permission is needed to scan\nthe qr codes of stand",
@@ -159,10 +159,8 @@ class UnlockScreen {
                             ).show()
                         }
                     }
-
-
                     shouldScanQr =
-                        cameraPermissionState.status.isGranted && wifiPermissionState.status.isGranted
+                        cameraPermissionState.status.isGranted && wifiPermissionState.allPermissionsGranted
                 }, enabled = canScanQr) {
                     Text("Scan  ")
                     Icon(Icons.Default.Search, "QR")
