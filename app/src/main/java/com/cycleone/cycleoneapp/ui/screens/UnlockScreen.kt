@@ -2,6 +2,7 @@ package com.cycleone.cycleoneapp.ui.screens
 
 import android.Manifest
 import android.net.MacAddress
+import android.net.Network
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -54,7 +55,6 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.net.Socket
 import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
@@ -193,7 +193,7 @@ class UnlockScreen {
                             print(mac)
                             Stand.Connect(
                                 mac
-                            ) { socket: Socket ->
+                            ) { socket: Network ->
                                 if (startedConnecting) {
                                     return@Connect
                                 }
@@ -256,6 +256,7 @@ class UnlockScreen {
                                         }
                                     }
                                 }
+                                Stand.Disconnect()
                             }
                         }
                     }

@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
+import android.net.ConnectivityManager.NetworkCallback
 import android.net.MacAddress
 import android.net.Network
 import android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET
@@ -22,8 +23,8 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.ToJson
 import com.squareup.moshi.adapter
 import kotlinx.coroutines.tasks.await
-import java.net.InetSocketAddress
-import java.net.Socket
+import java.net.HttpURLConnection
+import java.net.URI
 import java.nio.charset.Charset
 
 
@@ -126,40 +127,42 @@ class Stand(
 ) : Application() {
     companion object {
         lateinit var appContext: Context
+        lateinit var connectivityManager: ConnectivityManager
+        lateinit var networkCallback: NetworkCallback
 
         val parser = Moshi.Builder().add(ResponseAdapter())
             .add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
             .adapter<Response>()
 
-        fun GetStatus(socket: Socket): Response? {
+        fun Disconnect() {
+            connectivityManager.unregisterNetworkCallback(networkCallback)
+        }
 
-            if (!socket.isConnected || socket.isClosed) {
-                socket.connect(InetSocketAddress("10.10.10.10", 80))
+        fun GetStatus(network: Network): Response? {
+
+
+            var httpURLConnection =
+                network.openConnection(
+                    URI.create("http://10.10.10.10/").toURL()
+                ) as HttpURLConnection
+            httpURLConnection.connect()
+            var inputStream = httpURLConnection.errorStream
+            if (inputStream == null) {
+                inputStream = httpURLConnection.inputStream
             }
-            socket.getOutputStream().write(Command.GetStatus().getData())
-            socket.getOutputStream().flush()
-            val inputStream = socket.getInputStream()
-            val respLen = inputStream.read()
-            val respBytes = ByteArray(respLen)
-            inputStream.read(respBytes)
-            while (inputStream.available() > 0) {
-                inputStream.read()
-            }
-            val resp = respBytes.toString(Charset.defaultCharset())
+            val resp = inputStream.readBytes().toString(Charset.defaultCharset())
 
             Log.d("StatusResp", resp)
-            try {
-
-                val parsedResp = parser.fromJson(resp)
-                return parsedResp
+            return try {
+                parser.fromJson(resp)
             } catch (err: Throwable) {
 
                 Log.d("Parsing Resp", "Message: ${err.message}\nStacktrace: ${err.stackTrace}")
-                return null
+                null
             }
         }
 
-        fun Connect(mac: MacAddress, onConnect: (socket: Socket) -> Unit) {
+        fun Connect(mac: MacAddress, onConnect: (Network) -> Unit) {
             Log.d("MacAddress used: ", mac.toString())
             val wifiNetworkSpecifier =
                 WifiNetworkSpecifier.Builder().setWpa2Passphrase("CycleOne").setIsHiddenSsid(true)
@@ -169,61 +172,60 @@ class Stand(
                 .setNetworkSpecifier(wifiNetworkSpecifier).removeCapability(
                     NET_CAPABILITY_INTERNET
                 ).build()
-            val connectivityManager =
+            connectivityManager =
                 appContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+            networkCallback = object : NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    super.onAvailable(network)
+                    Log.d("ConnManager", "Connected")
+                    onConnect(network)
+                }
+
+                override fun onUnavailable() {
+                    super.onUnavailable()
+                    Log.e("Unavailable", "Network is unavailable")
+                    Toast.makeText(
+                        appContext,
+                        "Turn on WiFi, or stand is offline",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    startActivity(appContext, Intent(Settings.ACTION_WIFI_SETTINGS), null)
+                }
+
+            }
             connectivityManager.requestNetwork(
                 networkRequest,
-                object : ConnectivityManager.NetworkCallback() {
-                    override fun onAvailable(network: Network) {
-                        super.onAvailable(network)
-                        Log.d("ConnManager", "Connected")
-                        val socket = network.socketFactory.createSocket()
-                        onConnect(socket)
-                    }
-
-                    override fun onUnavailable() {
-                        super.onUnavailable()
-                        Log.e("Unavailable", "Network is unavailable")
-                        Toast.makeText(
-                            appContext,
-                            "Turn on WiFi, or stand is offline",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        startActivity(appContext, Intent(Settings.ACTION_WIFI_SETTINGS), null)
-                    }
-
-                })
+                networkCallback
+            )
 
         }
 
-        fun Unlock(socket: Socket, uid: String, serverRespToken: ByteArray): Response? {
+        fun Unlock(network: Network, uid: String, serverRespToken: ByteArray): Response? {
 
-            if (!socket.isConnected || socket.isClosed) {
-                socket.connect(InetSocketAddress("10.10.10.10", 80))
+            var httpURLConnection =
+                network.openConnection(
+                    URI.create("http://10.10.10.10/").toURL()
+                ) as HttpURLConnection
+            httpURLConnection.doOutput = true
+            httpURLConnection.setRequestProperty("Content-Type", "application/octet-stream")
+            httpURLConnection.outputStream.write(Command.Unlock(uid, serverRespToken).getData())
+            httpURLConnection.outputStream.flush()
+            httpURLConnection.outputStream.close()
+            httpURLConnection.connect()
+            var inputStream = httpURLConnection.errorStream
+            if (inputStream == null) {
+                inputStream = httpURLConnection.inputStream
             }
-            val data = Command.Unlock(uid, serverRespToken).getData()
-
-            Log.i("Data sent", data.toHexString())
-            val outputStream = socket.getOutputStream()
-            outputStream.write(data)
-            outputStream.flush()
-
-            val inputStream = socket.getInputStream()
-            val respLen = inputStream.read()
-            val respBytes = ByteArray(respLen)
-            inputStream.read(respBytes)
-            while (inputStream.available() > 0) {
-                inputStream.read()
-            }
-            val resp = respBytes.toString(Charset.defaultCharset())
-            try {
-                return parser.fromJson(resp)
+            val resp = inputStream.readBytes().toString(Charset.defaultCharset())
+            return try {
+                parser.fromJson(resp)
             } catch (err: Throwable) {
                 Log.e("Parsing response", "${err.message}\n${err.stackTrace.asList()}")
-                return null
+                null
             }
         }
     }
+
 }
 
 suspend fun getStandLocations(): List<StandLocation> {
