@@ -35,27 +35,8 @@ jobs:
           tag=$(echo $GITHUB_SHA | cut --characters=-10)
         fi
         echo "tag=$tag" >> $GITHUB_OUTPUT
-    - name: Publish Release Build
-      id: create_release
-      uses: actions/create-release@v1
-      env: 
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: true
       with:
-        prerelease: false
-        draft: true
-        tag_name: ${{ steps.tag.outputs.tag }}
-        release_name: release
-    - uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./app/build/outputs/apk/debug/app-debug.apk
-        asset_name: cycleone-debug.apk
-        asset_content_type: application/vnd.android.package-archive
-
-    - uses: eregon/publish-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        release_id: ${{ steps.create_release.outputs.id }}
+        files: ./app/build/outputs/apk/debug/app-debug.apk
