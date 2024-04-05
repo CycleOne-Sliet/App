@@ -33,8 +33,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_19
-        targetCompatibility = JavaVersion.VERSION_19
+        sourceCompatibility = VERSION_11
+        targetCompatibility = VERSION_11
     }
     kotlinOptions {
         jvmTarget = "19"
