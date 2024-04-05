@@ -32,12 +32,8 @@ android {
             )
         }
     }
-    compileOptions {
-        sourceCompatibility = VERSION_11
-        targetCompatibility = VERSION_11
-    }
     kotlinOptions {
-        jvmTarget = "19"
+        jvmTarget = "11"
     }
     buildFeatures {
         compose = true
