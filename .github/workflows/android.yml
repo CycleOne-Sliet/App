@@ -50,9 +50,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build.tar.xz
-        asset_name: build-t24.tar.xz
-        asset_content_type: application/tar+gzip
+        asset_path: ./app/build/outputs/apk/debug/app-debug.apk
+        asset_name: cycleone-debug.apk
+        asset_content_type: application/vnd.android.package-archive
 
     - uses: eregon/publish-release@v1
       env:
