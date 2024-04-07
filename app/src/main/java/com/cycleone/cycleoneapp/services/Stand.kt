@@ -164,7 +164,7 @@ class Stand(
         fun Connect(mac: MacAddress, onConnect: (Network) -> Unit) {
             Log.d("MacAddress used: ", mac.toString())
             val wifiNetworkSpecifier =
-                WifiNetworkSpecifier.Builder().setWpa2Passphrase("CycleOne").setIsHiddenSsid(true)
+                WifiNetworkSpecifier.Builder().setWpa2Passphrase("CycleOne")
                     .setBssid(mac)
                     .build()
 
