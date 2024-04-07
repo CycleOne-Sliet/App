@@ -63,21 +63,20 @@ sealed class Command {
 
     fun getEncodedSize(): Int {
         when (this) {
-            is Unlock -> return user.toByteArray().size + serverRespToken.size + 3
+            is Unlock -> return user.toByteArray().size + serverRespToken.size + 2
             is GetStatus -> return 1
         }
     }
 
     fun getData(): ByteArray {
         var bytes = ByteArray(this.getEncodedSize())
-        bytes[0] = this.getId()
         when (this) {
             is Unlock -> {
                 val userBytes = user.toByteArray()
-                bytes[1] = userBytes.size.toByte()
-                userBytes.copyInto(bytes, 2)
-                bytes[userBytes.size + 2] = serverRespToken.size.toByte()
-                serverRespToken.copyInto(bytes, userBytes.size + 3)
+                bytes[0] = userBytes.size.toByte()
+                userBytes.copyInto(bytes, 1)
+                bytes[userBytes.size + 1] = serverRespToken.size.toByte()
+                serverRespToken.copyInto(bytes, userBytes.size + 2)
                 return bytes
             }
 
@@ -202,21 +201,25 @@ class Stand(
 
         fun Unlock(network: Network, uid: String, serverRespToken: ByteArray): Response? {
 
+            Log.d("Stand", "Unlocking")
             var httpURLConnection =
                 network.openConnection(
                     URI.create("http://10.10.10.10/").toURL()
                 ) as HttpURLConnection
             httpURLConnection.doOutput = true
+            httpURLConnection.requestMethod = "POST"
             httpURLConnection.setRequestProperty("Content-Type", "application/octet-stream")
             httpURLConnection.outputStream.write(Command.Unlock(uid, serverRespToken).getData())
             httpURLConnection.outputStream.flush()
-            httpURLConnection.outputStream.close()
             httpURLConnection.connect()
             var inputStream = httpURLConnection.errorStream
             if (inputStream == null) {
                 inputStream = httpURLConnection.inputStream
             }
+            Log.d("Unlock RespCode", "${httpURLConnection.responseCode}")
+            Log.d("Unlock RespMsg", httpURLConnection.responseMessage)
             val resp = inputStream.readBytes().toString(Charset.defaultCharset())
+            Log.d("Unlock Resp", resp)
             return try {
                 parser.fromJson(resp)
             } catch (err: Throwable) {
