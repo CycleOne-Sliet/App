@@ -11,7 +11,6 @@ import android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET
 import android.net.NetworkCapabilities.TRANSPORT_WIFI
 import android.net.NetworkRequest
 import android.net.wifi.WifiNetworkSpecifier
-import android.net.wifi.aware.WifiAwareSession
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
@@ -119,11 +118,7 @@ class ResponseAdapter {
 }
 
 @OptIn(ExperimentalStdlibApi::class)
-class Stand(
-    onUnavailable: () -> Unit,
-    onAttach: (WifiAwareSession) -> Unit,
-    onAttachFailure: () -> Unit
-) : Application() {
+class Stand : Application() {
     companion object {
         lateinit var appContext: Context
         lateinit var connectivityManager: ConnectivityManager
@@ -179,6 +174,7 @@ class Stand(
                     super.onAvailable(network)
                     Log.d("ConnManager", "Connected")
                     onConnect(network)
+                    Disconnect()
                 }
 
                 override fun onUnavailable() {
@@ -197,7 +193,6 @@ class Stand(
                 networkRequest,
                 networkCallback
             )
-
         }
 
         fun Unlock(network: Network, uid: String, serverRespToken: ByteArray): Response? {

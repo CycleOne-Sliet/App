@@ -78,10 +78,7 @@ class UnlockScreen {
         }
         var st by remember {
             mutableStateOf(
-                Stand(
-                    onUnavailable = { canScanQr = false },
-                    onAttach = { canScanQr = true },
-                    onAttachFailure = { canScanQr = false })
+                Stand
             )
         }
         var tryUnlock by remember {
@@ -256,7 +253,6 @@ class UnlockScreen {
                                         }
                                     }
                                 }
-                                Stand.Disconnect()
                             }
                         }
                     }
