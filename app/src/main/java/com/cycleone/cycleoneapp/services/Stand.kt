@@ -229,6 +229,7 @@ class Stand : Application() {
 
 suspend fun getStandLocations(): List<StandLocation> {
     return Firebase.firestore.collection("stands").get().await().documents.map { d ->
+        Log.d("LocPhotoUrl", d["photo"] as String)
         StandLocation(
             d["location"] as String,
             d["photo"] as String
