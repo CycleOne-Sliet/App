@@ -6,7 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -16,7 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.services.CloudFunctions
 import com.cycleone.cycleoneapp.services.NavProvider
-import com.cycleone.cycleoneapp.services.Stand
+import com.cycleone.cycleoneapp.ui.screens.AllLocations
 import com.cycleone.cycleoneapp.ui.screens.ForgotPassword
 import com.cycleone.cycleoneapp.ui.screens.Home
 import com.cycleone.cycleoneapp.ui.screens.Landing
@@ -69,6 +68,9 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
         composable("/forgot_password") {
             ForgotPassword().Create()
         }
+        composable("/allLocations") {
+            AllLocations().Create()
+        }
     }
 }
 
@@ -79,6 +81,7 @@ fun GreetingPreview() {
         BaseController()
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreviewDark() {

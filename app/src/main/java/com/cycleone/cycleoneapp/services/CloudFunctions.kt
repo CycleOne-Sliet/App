@@ -4,30 +4,37 @@ import android.util.Log
 import com.cycleone.cycleoneapp.ui.screens.decodeHexFromStr
 import com.google.firebase.functions.FirebaseFunctions
 import kotlinx.coroutines.tasks.await
-import okio.ByteString.Companion.decodeBase64
-import okio.ByteString.Companion.decodeHex
-import java.util.Base64
 
+// Class used to communicate with the backend
 class CloudFunctions {
     companion object {
         lateinit var functions: FirebaseFunctions
+
+        // Responsible for establishing a connection
+        // Must be only called once per app instance
         fun Connect() {
             functions = FirebaseFunctions.getInstance()
         }
+
+        // Responsible for providing the encrypted token for unlocking the stand
         @OptIn(ExperimentalStdlibApi::class)
         suspend fun Token(cycle_id: String): ByteArray? {
             try {
                 val request = hashMapOf(
                     "cycle_id" to cycle_id
                 )
-                Log.d("Token CycleId", cycle_id)
-                Log.d("CycleId in hashmap", request["cycle_id"] as String)
+                // Call the function get_token with the cycle_id as an argument
                 val result = functions.getHttpsCallable("get_token").call(request)
                     .await()
+                // Get the token, strip `b'` from the front and `'` from the end
                 val data = result.data as Map<*, *>
                 val token = (data["token"] as String).removePrefix("b'").removeSuffix("'")
+                // Parse the hex into binary and return
                 return decodeHexFromStr(token)
             } catch (err: Throwable) {
+                // Should not happen, ever
+                // Basically means that the function on firebase has crashed
+                // Someone has to fix it in the CycleOneFunctions repo
                 Log.e("Functions Fked", "${err.message} ${err.stackTrace} $err")
                 return null
             }

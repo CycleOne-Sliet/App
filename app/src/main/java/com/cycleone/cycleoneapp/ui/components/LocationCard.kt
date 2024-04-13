@@ -22,11 +22,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.services.StandLocation
 import com.google.firebase.storage.FirebaseStorage
@@ -38,7 +42,8 @@ class LocationCard {
     fun Create(
         standInfo: StandLocation = StandLocation(
             photoUrl = "https://www.google.com/images/branding/googlelogo/1x/googlelogo_light_color_272x92dp.png",
-            location = "Test"
+            location = "Test",
+            cycles = listOf()
         ), navigator: NavController = NavProvider.controller, href: String = "/home"
     ) {
 
@@ -64,20 +69,27 @@ class LocationCard {
                     )
                 }
             }
-            Column(modifier = Modifier) {
-
-                if (thumbnail != null) {
-                    AsyncImage(
-                        model = thumbnail,
-                        standInfo.location,
-                        modifier = Modifier
-                            .size(160.dp, 120.dp)
-                            .clip(
-                                RoundedCornerShape(20.dp)
-                            )
-                            .padding(top = 10.dp)
-                    )
+            Column(
+                modifier =
+                if (thumbnail == null) {
+                    Modifier
                 } else {
+                    Modifier.paint(
+                        BitmapPainter(
+                            thumbnail!!.asImageBitmap(),
+                            IntOffset.Zero,
+                            IntSize(thumbnail!!.width, thumbnail!!.height)
+                        )
+                    )
+                }
+                    .size(160.dp, 120.dp)
+                    .clip(
+                        RoundedCornerShape(20.dp)
+                    )
+                    .padding(top = 10.dp),
+
+                ) {
+                if (thumbnail == null) {
                     Icon(Icons.Default.Refresh, "Loading")
                 }
                 Text(
