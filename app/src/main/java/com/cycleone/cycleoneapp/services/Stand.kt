@@ -207,7 +207,6 @@ class Stand : Application() {
                         "WiFi is Blocked, Please Enable it in settings",
                         Toast.LENGTH_LONG
                     ).show()
-                    startActivity(appContext, Intent(Settings.ACTION_WIFI_SETTINGS), null)
                 }
 
                 // When the Network is Unavailable, show the toast and send the user to setting
@@ -220,7 +219,6 @@ class Stand : Application() {
                         "Turn on WiFi, or stand is offline",
                         Toast.LENGTH_LONG
                     ).show()
-                    startActivity(appContext, Intent(Settings.ACTION_WIFI_SETTINGS), null)
                 }
             }
 
