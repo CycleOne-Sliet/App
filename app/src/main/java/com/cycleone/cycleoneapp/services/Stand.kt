@@ -141,7 +141,7 @@ class Stand : Application() {
         }
 
         // Get the stand's status
-        // Must be called after Connect has been called
+        // Must be called after Connect has been called by sandeep in app
         fun GetStatus(network: Network): Response? {
             // Establish an Http Connection
             var httpURLConnection =
