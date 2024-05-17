@@ -6,40 +6,29 @@ import android.net.Network
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.CloudFunctions
 import com.cycleone.cycleoneapp.services.NavProvider
@@ -109,61 +98,7 @@ class UnlockScreen {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                TextButton(
-                    onClick = { navController.popBackStack() }, modifier = Modifier
-                        .background(Color.Transparent)
-                        .align(AbsoluteAlignment.Left)
-                ) {
-                    Text("‹", fontSize = 50.sp, style = MaterialTheme.typography.titleLarge)
-                }
-                Image(painter = painterResource(id = R.drawable.unlock_image), "Unlock Image")
-                Text(
-                    "Scan QR Code to \nUnlock",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 20.dp)
-                )
-                Button(onClick = {
-                    cameraPermissionState.launchPermissionRequest()
-                    if (!cameraPermissionState.status.isGranted) {
-                        if (cameraPermissionState.status.shouldShowRationale) {
-                            Toast.makeText(
-                                context,
-                                "Camera permission is needed to scan\nthe qr codes of stand",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "Please grant the permission for camera in the settings",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
 
-                    wifiPermissionState.launchMultiplePermissionRequest()
-                    if (!wifiPermissionState.allPermissionsGranted) {
-                        if (wifiPermissionState.shouldShowRationale) {
-                            Toast.makeText(
-                                context,
-                                "Wifi permission is needed to scan\nthe qr codes of stand",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "Please grant the permission for wifi in the settings",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                    shouldScanQr =
-                        cameraPermissionState.status.isGranted && wifiPermissionState.allPermissionsGranted
-                }, enabled = canScanQr) {
-                    Text("Scan  ")
-                    Icon(Icons.Default.Search, "QR")
-                }
-                Text("Cycle not being used", modifier = Modifier.padding(top = 20.dp))
-                Text("Time since last unlock: ")
 
                 if (shouldScanQr && canScanQr) {
                     QrCode.startCamera(lifecycleOwner = lifecycleOwner, onSuccess = { qrCode ->
@@ -257,22 +192,54 @@ class UnlockScreen {
                         }
                     }
                     )
-                }
+                } else {
 
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp), horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                OutlinedButton(onClick = {}) {
-                    Icon(Icons.Default.Person, "Profile")
-                }
-                OutlinedButton(onClick = {}) {
-                    Icon(Icons.Default.Home, "Home")
-                }
-                OutlinedButton(onClick = {}) {
-                    Icon(Icons.Default.Notifications, "Notifications")
+                    Image(painter = painterResource(id = R.drawable.unlock_image), "Unlock Image")
+                    Text(
+                        "Scan QR Code to \nUnlock",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 20.dp)
+                    )
+                    Button(onClick = {
+                        cameraPermissionState.launchPermissionRequest()
+                        if (!cameraPermissionState.status.isGranted) {
+                            if (cameraPermissionState.status.shouldShowRationale) {
+                                Toast.makeText(
+                                    context,
+                                    "Camera permission is needed to scan\nthe qr codes of stand",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Please grant the permission for camera in the settings",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+
+                        wifiPermissionState.launchMultiplePermissionRequest()
+                        if (!wifiPermissionState.allPermissionsGranted) {
+                            if (wifiPermissionState.shouldShowRationale) {
+                                Toast.makeText(
+                                    context,
+                                    "Wifi permission is needed to scan\nthe qr codes of stand",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Please grant the permission for wifi in the settings",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                        shouldScanQr =
+                            cameraPermissionState.status.isGranted && wifiPermissionState.allPermissionsGranted
+                    }, enabled = canScanQr) {
+                        Text("Scan  ")
+                        Icon(Icons.Default.Search, "QR")
+                    }
                 }
             }
         }

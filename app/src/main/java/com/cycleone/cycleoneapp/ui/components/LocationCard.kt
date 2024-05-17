@@ -55,7 +55,6 @@ class LocationCard {
             var thumbnail: Bitmap? by remember {
                 mutableStateOf(null)
             }
-
             LaunchedEffect(standInfo) {
                 launch {
                     Log.d("Started Download", "Downloading started")
