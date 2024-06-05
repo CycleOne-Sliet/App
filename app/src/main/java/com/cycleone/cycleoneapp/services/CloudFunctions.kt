@@ -24,12 +24,8 @@ class CloudFunctions {
                 "token" to Base64.encodeToString(standToken, Base64.NO_WRAP)
             )
             // Call the function get_token with the cycle_id as an argument
-            val result = functions.getHttpsCallable("update_data").call(request)
+            functions.getHttpsCallable("update_data").call(request)
                 .await()
-            // Get the token, strip `b'` from the front and `'` from the end
-            val data = result.data as Map<*, *>
-            val token = (data["token"] as String).removePrefix("b'").removeSuffix("'")
-            // Parse the hex into binary and return
         }
 
         // Responsible for providing the encrypted token for unlocking the stand
