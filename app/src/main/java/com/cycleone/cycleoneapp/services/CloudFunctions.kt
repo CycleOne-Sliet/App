@@ -1,9 +1,11 @@
 package com.cycleone.cycleoneapp.services
 
+import android.util.Base64
 import android.util.Log
 import com.cycleone.cycleoneapp.ui.screens.decodeHexFromStr
 import com.google.firebase.functions.FirebaseFunctions
 import kotlinx.coroutines.tasks.await
+import java.nio.charset.Charset
 
 // Class used to communicate with the backend
 class CloudFunctions {
@@ -16,12 +18,28 @@ class CloudFunctions {
             functions = FirebaseFunctions.getInstance()
         }
 
+        suspend fun PutToken(standToken: ByteArray) {
+            Log.d("CloudFunctions", "Sending Status")
+            val request = hashMapOf(
+                "token" to Base64.encodeToString(standToken, Base64.NO_WRAP)
+            )
+            // Call the function get_token with the cycle_id as an argument
+            val result = functions.getHttpsCallable("update_data").call(request)
+                .await()
+            // Get the token, strip `b'` from the front and `'` from the end
+            val data = result.data as Map<*, *>
+            val token = (data["token"] as String).removePrefix("b'").removeSuffix("'")
+            // Parse the hex into binary and return
+        }
+
         // Responsible for providing the encrypted token for unlocking the stand
         @OptIn(ExperimentalStdlibApi::class)
-        suspend fun Token(cycle_id: String): ByteArray? {
+        suspend fun Token(standToken: ByteArray): ByteArray? {
+            Log.d("Token", standToken.toString(Charset.defaultCharset()))
+            Log.d("CloudFunctions", "Unlocking")
             try {
                 val request = hashMapOf(
-                    "cycle_id" to cycle_id
+                    "token" to Base64.encodeToString(standToken, Base64.NO_WRAP)
                 )
                 // Call the function get_token with the cycle_id as an argument
                 val result = functions.getHttpsCallable("get_token").call(request)

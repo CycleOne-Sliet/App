@@ -2,7 +2,6 @@ package com.cycleone.cycleoneapp.services
 
 import android.app.Application
 import android.content.Context
-import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.ConnectivityManager.NetworkCallback
 import android.net.MacAddress
@@ -11,11 +10,10 @@ import android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET
 import android.net.NetworkCapabilities.TRANSPORT_WIFI
 import android.net.NetworkRequest
 import android.net.wifi.WifiNetworkSpecifier
-import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
-import androidx.core.content.ContextCompat.startActivity
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.firestore
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.Moshi
@@ -138,6 +136,23 @@ class Stand : Application() {
         // Frees up the wifi
         fun Disconnect() {
             connectivityManager.unregisterNetworkCallback(networkCallback)
+        }
+
+        fun GetToken(network: Network): ByteArray {
+            // Establish an Http Connection
+            var httpURLConnection =
+                network.openConnection(
+                    URI.create("http://10.10.10.10/").toURL()
+                ) as HttpURLConnection
+            httpURLConnection.requestMethod = "PUT"
+            httpURLConnection.connect()
+            // Check for any errors
+            var inputStream = httpURLConnection.errorStream
+            if (inputStream == null) {
+                inputStream = httpURLConnection.inputStream
+            }
+            // Read the body
+            return inputStream.readBytes()
         }
 
         // Get the stand's status
@@ -270,6 +285,8 @@ class Stand : Application() {
 
 }
 
+data class Cycle(val tag: String, val isUnlocked: Boolean)
+
 // Used to get the Stand Locations stored in the backend
 suspend fun getStandLocations(): List<StandLocation> {
     return Firebase.firestore.collection("stands").get().await().documents.map { d ->
@@ -277,9 +294,14 @@ suspend fun getStandLocations(): List<StandLocation> {
         StandLocation(
             d["location"] as String,
             d["photo"] as String,
-            d["cycles"]?.let { cycleList -> return@let (cycleList as List<*>).map { cycle -> cycle as String } }!!
+            d["cycles"]?.let { cycleList ->
+                return@let (cycleList as List<*>).map { cycle -> cycle as DocumentReference }
+                    .map { cycle -> cycle.get().await() }.map { cycle ->
+                        Cycle(cycle["tag"] as String, cycle["isUnlocked"] as Boolean)
+                    }
+            }!!
         )
     }.toList()
 }
 
-data class StandLocation(val location: String, val photoUrl: String, val cycles: List<String>)
+data class StandLocation(val location: String, val photoUrl: String, val cycles: List<Cycle>)

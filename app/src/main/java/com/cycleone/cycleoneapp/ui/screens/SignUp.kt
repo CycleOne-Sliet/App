@@ -34,6 +34,8 @@ import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.PrestyledText
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 
 class SignUp {
     @Composable
@@ -94,19 +96,31 @@ class SignUp {
             Button(
                 onClick = {
                     Log.d("Password", password)
+                    if (email == "") {
+                        Toast.makeText(context, "Empty Mail ID", Toast.LENGTH_LONG).show()
+                        return@Button
+                    }
+                    if (password == "") {
+                        Toast.makeText(context, "Empty Password", Toast.LENGTH_LONG).show()
+                        return@Button
+                    }
                     val authResult =
-                        FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
-                            .addOnSuccessListener { authResult ->
-                                authResult.user?.updateProfile(
-                                    UserProfileChangeRequest.Builder().setDisplayName(name).build()
-                                )
-                                navController.navigate("/home")
-                            }.addOnFailureListener {
-                            Toast.makeText(
-                                context,
-                                "Error while creating account: $it",
-                                Toast.LENGTH_LONG
-                            ).show()
+                        runBlocking {
+                            FirebaseAuth.getInstance()
+                                .createUserWithEmailAndPassword(email, password)
+                                .addOnSuccessListener { authResult ->
+                                    authResult.user?.updateProfile(
+                                        UserProfileChangeRequest.Builder().setDisplayName(name)
+                                            .build()
+                                    )
+                                    navController.navigate("/home")
+                                }.addOnFailureListener {
+                                    Toast.makeText(
+                                        context,
+                                        "Error while creating account: $it",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }.await()
                         }
 
                 }, modifier = Modifier.fillMaxWidth(0.75F), shape = RoundedCornerShape(15.dp)
