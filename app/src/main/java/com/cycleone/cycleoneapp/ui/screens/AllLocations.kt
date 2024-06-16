@@ -86,6 +86,6 @@ class AllLocations {
     @Preview
     @Composable
     fun Preview() {
-        UI(rememberNavController(), listOf(StandLocation("hfewo", "kjfr", listOf())))
+        UI(rememberNavController(), listOf(StandLocation("hfewo", "kjfr")))
     }
 }

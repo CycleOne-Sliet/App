@@ -43,7 +43,6 @@ class LocationCard {
         standInfo: StandLocation = StandLocation(
             photoUrl = "https://www.google.com/images/branding/googlelogo/1x/googlelogo_light_color_272x92dp.png",
             location = "Test",
-            cycles = listOf()
         ), navigator: NavController = NavProvider.controller, href: String = "/home"
     ) {
 

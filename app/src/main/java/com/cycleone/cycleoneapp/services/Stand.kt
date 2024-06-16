@@ -13,7 +13,6 @@ import android.net.wifi.WifiNetworkSpecifier
 import android.util.Log
 import android.widget.Toast
 import com.google.firebase.Firebase
-import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.firestore
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.Moshi
@@ -289,19 +288,14 @@ data class Cycle(val tag: String, val isUnlocked: Boolean)
 
 // Used to get the Stand Locations stored in the backend
 suspend fun getStandLocations(): List<StandLocation> {
-    return Firebase.firestore.collection("stands").get().await().documents.map { d ->
+    Log.d("StandLocations", "Got Some")
+    return Firebase.firestore.collection("standLocations").get().await().documents.map { d ->
         Log.d("LocPhotoUrl", d["photo"] as String)
         StandLocation(
             d["location"] as String,
             d["photo"] as String,
-            d["cycles"]?.let { cycleList ->
-                return@let (cycleList as List<*>).map { cycle -> cycle as DocumentReference }
-                    .map { cycle -> cycle.get().await() }.map { cycle ->
-                        Cycle(cycle["tag"] as String, cycle["isUnlocked"] as Boolean)
-                    }
-            }!!
         )
     }.toList()
 }
 
-data class StandLocation(val location: String, val photoUrl: String, val cycles: List<Cycle>)
+data class StandLocation(val location: String, val photoUrl: String)

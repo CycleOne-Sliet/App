@@ -2,56 +2,80 @@ package com.cycleone.cycleoneapp.services
 
 import android.util.Base64
 import android.util.Log
-import com.cycleone.cycleoneapp.ui.screens.decodeHexFromStr
-import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import java.net.URI
 import java.nio.charset.Charset
 
 // Class used to communicate with the backend
 class CloudFunctions {
     companion object {
-        lateinit var functions: FirebaseFunctions
+        // lateinit var functions: FirebaseFunctions
+        val url = "https://cycleruncloudrun-bssblvm4cq-an.a.run.app"
 
         // Responsible for establishing a connection
         // Must be only called once per app instance
         fun Connect() {
-            functions = FirebaseFunctions.getInstance()
+            //functions = FirebaseFunctions.getInstance()
         }
 
         suspend fun PutToken(standToken: ByteArray) {
             Log.d("CloudFunctions", "Sending Status")
-            val request = hashMapOf(
-                "token" to Base64.encodeToString(standToken, Base64.NO_WRAP)
-            )
-            // Call the function get_token with the cycle_id as an argument
-            functions.getHttpsCallable("update_data").call(request)
-                .await()
+            val token = Base64.encodeToString(standToken, Base64.NO_WRAP)
+            Log.d("PutToken", token)
+
+            var httpURLConnection =
+                withContext(Dispatchers.IO) {
+                    URI.create("$url/update_data").toURL().openConnection()
+                }
+            // Set the http request method to POST
+            httpURLConnection.doOutput = true
+            // Set the content type to octet stream, to be able to send binary data
+            httpURLConnection.setRequestProperty("Content-Type", "text/plain")
+            val userToken = FirebaseAuth.getInstance().getAccessToken(true).await().token
+            httpURLConnection.headerFields["Authorization"] =
+                listOf("Bearer ${userToken}")
+            // Send the Unlock Command's Data
+            withContext(Dispatchers.IO) {
+                httpURLConnection.outputStream.write(token.toByteArray())
+                httpURLConnection.outputStream.flush()
+                httpURLConnection.connect()
+            }
+            var inputStream = httpURLConnection.inputStream
+            // Read the response
+            val resp = inputStream.readBytes().toString(Charset.defaultCharset())
+            Log.d("Unlock Resp", resp)
         }
 
         // Responsible for providing the encrypted token for unlocking the stand
         @OptIn(ExperimentalStdlibApi::class)
-        suspend fun Token(standToken: ByteArray): ByteArray? {
-            Log.d("Token", standToken.toString(Charset.defaultCharset()))
-            Log.d("CloudFunctions", "Unlocking")
-            try {
-                val request = hashMapOf(
-                    "token" to Base64.encodeToString(standToken, Base64.NO_WRAP)
-                )
-                // Call the function get_token with the cycle_id as an argument
-                val result = functions.getHttpsCallable("get_token").call(request)
-                    .await()
-                // Get the token, strip `b'` from the front and `'` from the end
-                val data = result.data as Map<*, *>
-                val token = (data["token"] as String).removePrefix("b'").removeSuffix("'")
-                // Parse the hex into binary and return
-                return decodeHexFromStr(token)
-            } catch (err: Throwable) {
-                // Should not happen, ever
-                // Basically means that the function on firebase has crashed
-                // Someone has to fix it in the CycleOneFunctions repo
-                Log.e("Functions Fked", "${err.message} ${err.stackTrace} $err")
-                return null
+        suspend fun Token(standToken: ByteArray): ByteArray {
+            Log.d("CloudFunctions", "Sending Status")
+            val token = Base64.encodeToString(standToken, Base64.NO_WRAP)
+            Log.d("PutToken", token)
+
+            var httpURLConnection =
+                withContext(Dispatchers.IO) {
+                    URI.create("$url/get_token").toURL().openConnection()
+                }
+            // Set the http request method to POST
+            httpURLConnection.doOutput = true
+            // Set the content type to octet stream, to be able to send binary data
+            httpURLConnection.setRequestProperty("Content-Type", "text/plain")
+            val userToken = FirebaseAuth.getInstance().getAccessToken(true).await().token
+            httpURLConnection.headerFields["Authorization"] =
+                listOf("Bearer ${userToken}")
+            // Send the Unlock Command's Data
+            withContext(Dispatchers.IO) {
+                httpURLConnection.outputStream.write(token.toByteArray())
+                httpURLConnection.outputStream.flush()
+                httpURLConnection.connect()
             }
+            var inputStream = httpURLConnection.inputStream
+            // Read the response
+            return inputStream.readBytes()
         }
     }
 }
