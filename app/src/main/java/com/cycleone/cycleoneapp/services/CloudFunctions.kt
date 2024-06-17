@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
 import java.net.URI
 import java.nio.charset.Charset
 
@@ -28,9 +29,10 @@ class CloudFunctions {
 
             var httpURLConnection =
                 withContext(Dispatchers.IO) {
-                    URI.create("$url/update_data").toURL().openConnection()
+                    URI.create("$url/update_data").toURL().openConnection() as HttpURLConnection
                 }
             // Set the http request method to POST
+            httpURLConnection.requestMethod = "POST"
             httpURLConnection.doOutput = true
             // Set the content type to octet stream, to be able to send binary data
             httpURLConnection.setRequestProperty("Content-Type", "text/plain")
@@ -58,21 +60,24 @@ class CloudFunctions {
 
             var httpURLConnection =
                 withContext(Dispatchers.IO) {
-                    URI.create("$url/get_token").toURL().openConnection()
+                    (URI.create("$url/get_token").toURL().openConnection() as HttpURLConnection)
                 }
             // Set the http request method to POST
+            httpURLConnection.requestMethod = "POST"
             httpURLConnection.doOutput = true
             // Set the content type to octet stream, to be able to send binary data
             httpURLConnection.setRequestProperty("Content-Type", "text/plain")
             val userToken = FirebaseAuth.getInstance().getAccessToken(true).await().token
-            httpURLConnection.headerFields["Authorization"] =
-                listOf("Bearer ${userToken}")
+            httpURLConnection.setRequestProperty("Authorization", "Bearer $userToken")
+            Log.d("Token", userToken.toString())
             // Send the Unlock Command's Data
             withContext(Dispatchers.IO) {
+                Log.d("StandToken", token)
                 httpURLConnection.outputStream.write(token.toByteArray())
                 httpURLConnection.outputStream.flush()
                 httpURLConnection.connect()
             }
+            Log.d("Token Response Code", httpURLConnection.responseCode.toString())
             var inputStream = httpURLConnection.inputStream
             // Read the response
             return inputStream.readBytes()

@@ -84,6 +84,9 @@ class Home {
                         LocationCard().Create(location)
                     }
                 }
+
+                FirebaseAuth.getInstance().getAccessToken(true)
+                    .addOnSuccessListener { t -> Log.d("Token", t.token.toString()) }
             }
         }
     }
