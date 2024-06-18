@@ -99,7 +99,7 @@ class UnlockScreen {
                     .await()!!.data.toString()
             )
             Firebase.firestore.collection("users").document(FirebaseAuth.getInstance().uid!!).get()
-                .await()!!.data?.get("hasCycle") as Boolean
+                .await()!!.data?.get("HasCycle") as Boolean
 
         }
         val wifiPermissionState = rememberMultiplePermissionsState(
@@ -300,7 +300,7 @@ class UnlockScreen {
                                     Log.d(
                                         "CycleId Before Function Call", cycleId.toString()
                                     )
-                                    CloudFunctions.Token(standToken)?.let {
+                                    CloudFunctions.Token(standToken).let {
                                         FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
                                             Log.d("Uid", it1)
                                             Log.d("serverResp", it.toHexString())

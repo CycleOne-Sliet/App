@@ -290,10 +290,10 @@ data class Cycle(val tag: String, val isUnlocked: Boolean)
 suspend fun getStandLocations(): List<StandLocation> {
     Log.d("StandLocations", "Got Some")
     return Firebase.firestore.collection("standLocations").get().await().documents.map { d ->
-        Log.d("LocPhotoUrl", d["photo"] as String)
+        Log.d("LocPhotoUrl", d["Photo"] as String)
         StandLocation(
-            d["location"] as String,
-            d["photo"] as String,
+            d["Location"] as String,
+            d["Photo"] as String,
         )
     }.toList()
 }
