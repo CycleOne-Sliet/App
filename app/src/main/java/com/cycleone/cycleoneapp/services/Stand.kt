@@ -18,6 +18,7 @@ import com.squareup.moshi.FromJson
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.ToJson
 import com.squareup.moshi.adapter
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import java.net.HttpURLConnection
 import java.net.URI
@@ -184,7 +185,7 @@ class Stand : Application() {
 
         // Connects to the stand over the mac address
 
-        fun Connect(mac: MacAddress, onConnect: (Network) -> Unit) {
+        fun Connect(mac: MacAddress, onConnect: suspend (Network) -> Unit) {
             // Used to configure the wifi network
             // We are setting the Ssid to CycleOneS1
             // Password to CycleOne and mac address to whatever that was passed in
@@ -207,8 +208,10 @@ class Stand : Application() {
                 // When network becomes available, call the onConnect function, and then disconnect
                 override fun onAvailable(network: Network) {
                     super.onAvailable(network)
-                    onConnect(network)
-                    Disconnect()
+                    runBlocking {
+                        onConnect(network)
+                        Disconnect()
+                    }
                 }
 
                 // Called when the Wifi is Blocked, We send the user to Settings to unblock it
@@ -290,6 +293,7 @@ data class Cycle(val tag: String, val isUnlocked: Boolean)
 suspend fun getStandLocations(): List<StandLocation> {
     Log.d("StandLocations", "Got Some")
     return Firebase.firestore.collection("standLocations").get().await().documents.map { d ->
+        Log.d("StandLocation", d.toString())
         Log.d("LocPhotoUrl", d["Photo"] as String)
         StandLocation(
             d["Location"] as String,

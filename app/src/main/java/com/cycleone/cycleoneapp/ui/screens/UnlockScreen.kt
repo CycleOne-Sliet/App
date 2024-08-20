@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,9 +46,9 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.launch
 import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
@@ -60,60 +61,71 @@ fun decodeHexFromStr(hex: String): ByteArray {
 }
 
 class UnlockScreen {
+    var transactionRunning = false
+
     @OptIn(ExperimentalStdlibApi::class, ExperimentalPermissionsApi::class)
     @Composable
-    fun Create() {
-        var shouldScanQr by remember {
-            mutableStateOf(false)
+    fun Create(modifier: Modifier = Modifier) {
+        var uid by remember {
+            mutableStateOf(Firebase.auth.uid)
         }
-        var canScanQr by remember {
+        if (uid == null) {
+            NavProvider.controller.navigate("/sign_in")
+            return
+        }
+        var userHasCycle by remember {
             mutableStateOf(true)
         }
-        var st by remember {
-            mutableStateOf(
-                Stand
-            )
+        Firebase.firestore.collection("users").document(uid!!).get().addOnSuccessListener { snap ->
+            if (snap.data?.get("HasCycle") != null) {
+                userHasCycle = snap.data?.get("HasCycle")!! as Boolean
+            }
         }
-        var tryUnlock by remember {
-            mutableStateOf(false)
-        }
-        var startedQrScanning by remember {
-            mutableStateOf(false)
-        }
-        var startedConnecting by remember {
-            mutableStateOf(false)
-        }
-        var unlocking by remember {
-            mutableStateOf(false)
-        }
-
-        var returning by remember {
-            mutableStateOf(false)
-        }
-        val userHasCycle = runBlocking {
-            Log.d("UID", FirebaseAuth.getInstance().uid!!.toString())
-            Log.d(
-                "User",
-                Firebase.firestore.collection("users").document(FirebaseAuth.getInstance().uid!!)
-                    .get()
-                    .await()!!.data.toString()
-            )
-            Firebase.firestore.collection("users").document(FirebaseAuth.getInstance().uid!!).get()
-                .await()!!.data?.get("HasCycle") as Boolean
-
-        }
-        val wifiPermissionState = rememberMultiplePermissionsState(
+        Log.d("UID", uid.toString())
+        rememberMultiplePermissionsState(
             listOf(Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.CHANGE_WIFI_STATE)
         )
 
-        val cameraPermissionState = rememberPermissionState(
+        rememberPermissionState(
             Manifest.permission.CAMERA
         )
-        val lifecycleOwner = LocalLifecycleOwner.current
+        var showCamera by remember {
+            mutableStateOf(false)
+        }
+        val scope = rememberCoroutineScope()
         val context = LocalContext.current
-        val navController = NavProvider.controller
+        UI(modifier, onScanSuccess = { qr ->
+            scope.launch {
+                if (userHasCycle) {
+                    returnSequence(qr, context)
+                } else {
+                    unlockSequence(qr, context)
+                }
+            }
+            Firebase.firestore.collection("users").document(uid!!).get()
+                .addOnSuccessListener { snap ->
+                    if (snap.data?.get("HasCycle") != null) {
+                        userHasCycle = snap.data?.get("HasCycle")!! as Boolean
+                    }
+                }
+        }, showCamera = showCamera, buttonClick = {
+            showCamera = true
+        }, buttonText = if (userHasCycle) "Return" else "Scan")
+    }
+
+    @Preview
+    @Composable
+    fun UI(
+        modifier: Modifier = Modifier,
+        onScanSuccess: (String) -> Unit = {},
+        showCamera: Boolean = false,
+        buttonClick: () -> Unit = {},
+        buttonText: String = "Scan",
+    ) {
+
+        val lifecycleOwner = LocalLifecycleOwner.current
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -121,22 +133,8 @@ class UnlockScreen {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (shouldScanQr && canScanQr) {
-                    QrCode.startCamera(lifecycleOwner = lifecycleOwner, onSuccess = {
-                        if (startedQrScanning) {
-                            return@startCamera
-                        }
-                        startedQrScanning = true
-                        if (unlocking) {
-                            unlockSequence(it, context)
-                            unlocking = false
-                        } else if (returning) {
-                            returnSequence(it, context)
-                            returning = false
-                        }
-                        startedQrScanning = false
-                        shouldScanQr = false
-                    })
+                if (showCamera) {
+                    QrCode.startCamera(lifecycleOwner = lifecycleOwner, onSuccess = onScanSuccess)
                 } else {
                     Image(painter = painterResource(id = R.drawable.unlock_image), "Unlock Image")
                     Text(
@@ -144,30 +142,11 @@ class UnlockScreen {
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = 20.dp)
                     )
-                    if (userHasCycle) {
-                        Button(onClick = {
-                            shouldScanQr = camAndWifiPermissions(
-                                cameraPermissionState,
-                                wifiPermissionState,
-                                context
-                            )
-                            returning = true
-                        }) {
-                            Text("Return  ")
-                            Icon(Icons.Default.Search, "QR")
-                        }
-                    } else {
-                        Button(onClick = {
-                            shouldScanQr = camAndWifiPermissions(
-                                cameraPermissionState,
-                                wifiPermissionState,
-                                context
-                            )
-                            unlocking = true
-                        }, enabled = canScanQr) {
-                            Text("Scan  ")
-                            Icon(Icons.Default.Search, "QR")
-                        }
+                    Button(onClick = {
+                        buttonClick()
+                    }) {
+                        Text(buttonText)
+                        Icon(Icons.Default.Search, "QR")
                     }
                 }
             }
@@ -218,123 +197,127 @@ class UnlockScreen {
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    fun returnSequence(qrCode: String, context: Context) {
-        runBlocking {
-            Log.d("qrCode", qrCode)
-            Stand.appContext = context
-            val macHex = decodeHexFromStr(qrCode)
-            Log.d("QrSize", macHex.size.toString())
-            if (macHex.size != 6) {
-                Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
-                return@runBlocking
+    suspend fun returnSequence(qrCode: String, context: Context) {
+        if (transactionRunning) {
+            return
+        }
+        transactionRunning = true
+        Log.d("qrCode", qrCode)
+        Stand.appContext = context
+        val macHex = decodeHexFromStr(qrCode)
+        Log.d("QrSize", macHex.size.toString())
+        if (macHex.size != 6) {
+            Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
+            transactionRunning = false
+            return
+        }
+        val mac: MacAddress = MacAddress.fromBytes(macHex)
+        print(mac)
+        Stand.Connect(
+            mac
+        ) { socket: Network ->
+            Log.d("Stand", "Connecting")
+            var resp = Stand.GetStatus(socket)
+            val standToken = Stand.GetToken(socket)
+            print(resp)
+            if (resp == null) {
+                transactionRunning = false
+                return@Connect
             }
-            val mac: MacAddress = MacAddress.fromBytes(macHex)
-            print(mac)
-            Stand.Connect(
-                mac
-            ) { socket: Network ->
-                Log.d("Stand", "Connecting")
-                var resp = Stand.GetStatus(socket)
-                val standToken = Stand.GetToken(socket)
-                print(resp)
-                if (resp != null && standToken != null) {
-                    when (resp) {
-                        is Response.Ok -> {
-                            Toast.makeText(
-                                context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG
-                            ).show()
-                            if (resp.cycleId != null) {
-                                val cycleId = resp.cycleId
-                                runBlocking {
-                                    Log.d(
-                                        "CycleId Before Function Call", cycleId.toString()
-                                    )
-                                    CloudFunctions.PutToken(standToken)
-                                }
-                            }
-                        }
-
-                        is Response.Err -> {
-                            Log.e(
-                                "StandError", resp.toString()
-                            )
-                            Toast.makeText(
-                                context, resp.error, Toast.LENGTH_LONG
-                            ).show()
-                        }
+            when (resp) {
+                is Response.Ok -> {
+                    Toast.makeText(
+                        context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG
+                    ).show()
+                    if (resp.cycleId == null) {
+                        transactionRunning = false
+                        return@Connect
                     }
+
+                    val cycleId = resp.cycleId
+                    Log.d(
+                        "CycleId Before Function Call", cycleId.toString()
+                    )
+                    CloudFunctions.PutToken(standToken)
+                }
+
+                is Response.Err -> {
+                    Log.e(
+                        "StandError", resp.toString()
+                    )
+                    Toast.makeText(
+                        context, resp.error, Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }
+        transactionRunning = false
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    fun unlockSequence(qrCode: String, context: Context) {
-        runBlocking {
-            Log.d("qrCode", qrCode)
-            Stand.appContext = context
-            val macHex = decodeHexFromStr(qrCode)
-            Log.d("QrSize", macHex.size.toString())
-            if (macHex.size != 6) {
-                Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
-                return@runBlocking
+    suspend fun unlockSequence(qrCode: String, context: Context) {
+        if (transactionRunning) {
+            return
+        }
+        transactionRunning = true
+        Log.d("qrCode", qrCode)
+        Stand.appContext = context
+        val macHex = decodeHexFromStr(qrCode)
+        Log.d("QrSize", macHex.size.toString())
+        if (macHex.size != 6) {
+            Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
+            transactionRunning = false
+            return
+        }
+        val mac: MacAddress = MacAddress.fromBytes(macHex)
+        print(mac)
+        Stand.Connect(
+            mac
+        ) { socket: Network ->
+            Log.d("Stand", "Connecting")
+            var resp = Stand.GetStatus(socket)
+            val standToken = Stand.GetToken(socket)
+            print(resp)
+            if (resp == null) {
+                transactionRunning = false
+                return@Connect
             }
-            val mac: MacAddress = MacAddress.fromBytes(macHex)
-            print(mac)
-            Stand.Connect(
-                mac
-            ) { socket: Network ->
-                Log.d("Stand", "Connecting")
-                var resp = Stand.GetStatus(socket)
-                val standToken = Stand.GetToken(socket)
-                print(resp)
-                if (resp != null && standToken != null) {
-                    when (resp) {
-                        is Response.Ok -> {
-                            Toast.makeText(
-                                context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG
-                            ).show()
-                            if (resp.cycleId != null) {
-                                val cycleId = resp.cycleId
-                                runBlocking {
-                                    Log.d(
-                                        "CycleId Before Function Call", cycleId.toString()
-                                    )
-                                    CloudFunctions.Token(standToken).let {
-                                        FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
-                                            Log.d("Uid", it1)
-                                            Log.d("serverResp", it.toHexString())
-                                            resp = Stand.Unlock(
-                                                socket, it1, it
-                                            )
-                                            Toast.makeText(
-                                                context,
-                                                "Successfully Unlocked the stand",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        is Response.Err -> {
-                            Log.e(
-                                "StandError", resp.toString()
+            when (resp) {
+                is Response.Ok -> {
+                    Toast.makeText(
+                        context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG
+                    ).show()
+                    if (resp.cycleId == null) {
+                        transactionRunning = false
+                        return@Connect
+                    }
+                    val cycleId = resp.cycleId
+                    Log.d(
+                        "CycleId Before Function Call", cycleId.toString()
+                    )
+                    CloudFunctions.Token(standToken).let {
+                        FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
+                            Log.d("Uid", it1)
+                            Log.d("serverResp", it.toHexString())
+                            resp = Stand.Unlock(
+                                socket, it1, it
                             )
                             Toast.makeText(
-                                context, (resp as Response.Err).error, Toast.LENGTH_LONG
+                                context, "Successfully Unlocked the stand", Toast.LENGTH_LONG
                             ).show()
                         }
                     }
                 }
+
+                is Response.Err -> {
+                    Log.e(
+                        "StandError", resp.toString()
+                    )
+                    Toast.makeText(
+                        context, (resp as Response.Err).error, Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
-    }
-
-    @Composable
-    @Preview
-    fun Preview() {
-        Create()
     }
 }

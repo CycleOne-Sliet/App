@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,29 +23,46 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.NavProvider
-import com.cycleone.cycleoneapp.services.NavProvider.Companion.controller
 import com.cycleone.cycleoneapp.ui.components.PrestyledText
 
 class ForgotPassword {
     @Composable
     @Preview
-    public fun Create() {
+    fun Create(modifier: Modifier = Modifier) {
         val navController = NavProvider.controller
-        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            TextButton(onClick = {navController.popBackStack()}, modifier = Modifier
-                .background(Color.Transparent)
-                .align(AbsoluteAlignment.Left)) {
+        Column(
+            modifier = modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            TextButton(
+                onClick = { navController.popBackStack() }, modifier = Modifier
+                    .background(Color.Transparent)
+                    .align(AbsoluteAlignment.Left)
+            ) {
                 Text("‹", fontSize = 50.sp, style = MaterialTheme.typography.titleLarge)
             }
             Image(painter = painterResource(id = R.drawable.forgot_password_image), "Locate")
             Text("Forgot your password?", style = MaterialTheme.typography.titleLarge)
-            Text("Enter your email address and we will mail you an otp reset link to reset your otp.", style = MaterialTheme.typography.labelMedium, modifier = Modifier.fillMaxWidth(0.7F), textAlign = TextAlign.Center)
-            PrestyledText().Regular(placeholder = "Enter your Email", onChange = {}, label = "Mail", icon = Icons.Default.Email)
-            Button(onClick = {}, modifier = Modifier.fillMaxWidth(0.75F).padding(vertical = 10.dp)
-                ,shape = RoundedCornerShape(15.dp)
+            Text(
+                "Enter your email address and we will mail you an otp reset link to reset your otp.",
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.fillMaxWidth(0.7F),
+                textAlign = TextAlign.Center
+            )
+            PrestyledText().Regular(
+                placeholder = "Enter your Email",
+                onChange = {},
+                label = "Mail",
+                icon = Icons.Default.Email
+            )
+            Button(
+                onClick = {},
+                modifier = Modifier
+                    .fillMaxWidth(0.75F)
+                    .padding(vertical = 10.dp),
+                shape = RoundedCornerShape(15.dp)
 
             ) {
                 Text("Next ›", style = MaterialTheme.typography.titleMedium)

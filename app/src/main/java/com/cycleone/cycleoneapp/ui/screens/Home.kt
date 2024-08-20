@@ -23,17 +23,21 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.NavProvider
+import com.cycleone.cycleoneapp.services.StandLocation
 import com.cycleone.cycleoneapp.services.getStandLocations
 import com.cycleone.cycleoneapp.ui.components.LocationCard
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.runBlocking
 
 class Home {
+
+    val onViewAll = { NavProvider.controller.navigate("/allLocations") }
+
     @Composable
     fun Create(
+        modifier: Modifier = Modifier,
         authInstance: FirebaseAuth? = FirebaseAuth.getInstance(),
         navController: NavController = NavProvider.controller
     ) {
@@ -44,8 +48,24 @@ class Home {
                 navController.navigate("/landing")
             }
         }
+        UI(modifier, suspend { getStandLocations() })
+    }
+
+    @Preview
+    @Composable
+    fun UI(
+        modifier: Modifier = Modifier,
+        getLocations: suspend () -> List<StandLocation> = {
+            listOf(
+                StandLocation(
+                    location = "Test",
+                    photoUrl = "youtube.com/favicon.ico"
+                )
+            )
+        }
+    ) {
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
@@ -68,32 +88,23 @@ class Home {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp)
+                        .padding(10.dp)
                 ) {
                     Text("Available Stand Areas", style = MaterialTheme.typography.titleMedium)
-                    TextButton(onClick = { navController.navigate("/allLocations") }) {
+                    TextButton(onClick = onViewAll) {
                         Text("View All")
                     }
                 }
                 LazyRow(
                     modifier = Modifier
-                        .padding(20.dp)
+                        .padding(10.dp)
                         .fillMaxWidth(0.9f),
                 ) {
-                    items(runBlocking { getStandLocations() }) { location ->
+                    items(runBlocking { getLocations() }) { location ->
                         LocationCard().Create(location)
                     }
                 }
-
-                FirebaseAuth.getInstance().getAccessToken(true)
-                    .addOnSuccessListener { t -> Log.d("Token", t.token.toString()) }
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun HomePreview() {
-    Home().Create(null, rememberNavController())
 }

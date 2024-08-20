@@ -37,8 +37,10 @@ class CloudFunctions {
             // Set the content type to octet stream, to be able to send binary data
             httpURLConnection.setRequestProperty("Content-Type", "text/plain")
             val userToken = FirebaseAuth.getInstance().getAccessToken(true).await().token
-            httpURLConnection.headerFields["Authorization"] =
-                listOf("Bearer ${userToken}")
+            httpURLConnection.setRequestProperty(
+                "Authorization",
+                "Bearer ${userToken}"
+            )
             // Send the Unlock Command's Data
             withContext(Dispatchers.IO) {
                 httpURLConnection.outputStream.write(token.toByteArray())
@@ -80,6 +82,9 @@ class CloudFunctions {
             Log.d("Token Response Code", httpURLConnection.responseCode.toString())
             var inputStream = httpURLConnection.inputStream
             // Read the response
+            val serverResponse = inputStream.readBytes()
+            Log.d("ServerResp", serverResponse.toString())
+            Log.d("ServerRespHex", serverResponse.toHexString(HexFormat.UpperCase))
             return inputStream.readBytes()
         }
     }

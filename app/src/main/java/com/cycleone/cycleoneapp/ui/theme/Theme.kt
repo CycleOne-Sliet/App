@@ -1,55 +1,49 @@
 package com.cycleone.cycleoneapp.ui.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Color(0xffff6b35),
+    secondary = Color(0xfff7c59f),
+    tertiary = Color(0xffefefd0),
+    onPrimary = Color(0xffefefd0)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = Color(0xff004e89),
+    secondary = Color(0xff1a659e),
+    tertiary = Color(0xffefefd0),
+    onPrimary = Color(0xffefefd0)
+)
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+private val shapes = Shapes(
+    extraLarge = RoundedCornerShape(25.dp),
+    large = RoundedCornerShape(20.dp),
+    medium = RoundedCornerShape(10.dp),
 )
 
 @Composable
 fun CycleoneAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
+    dynamicColor: Boolean = false,
+    content: @Composable() Function0<Unit>
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
 
+    val colorScheme = when {
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
@@ -62,9 +56,10 @@ fun CycleoneAppTheme(
         }
     }
 
+
     MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
+        colorScheme,
+        typography = typography,
         content = content
     )
 }

@@ -1,7 +1,6 @@
 package com.cycleone.cycleoneapp.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,15 +22,18 @@ import com.cycleone.cycleoneapp.ui.components.PrestyledText
 
 class OtpScreen {
     @Composable
-    public fun Create() {
+    fun Create(modifier: Modifier = Modifier) {
         val navController = NavProvider.controller
-        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             TextButton(
-                onClick = {navController.popBackStack()}, modifier = Modifier
+                onClick = { navController.popBackStack() }, modifier = Modifier
                     .background(Color.Transparent)
                     .align(AbsoluteAlignment.Left)
             ) {
-                Row( verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("‹", fontSize = 60.sp, style = MaterialTheme.typography.labelMedium)
                     Text(
                         "   Forgot Password",
@@ -41,16 +43,31 @@ class OtpScreen {
                     )
                 }
             }
-            Text("OTP Verification", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(vertical = 20.dp))
+            Text(
+                "OTP Verification",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(vertical = 20.dp)
+            )
             Text("We sent the 4 digit code to your email.")
             val min = 4
             val sec = 59
-            Text("This code will expire in ${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}")
-            Text("OTP code", style = MaterialTheme.typography.bodyMedium, modifier = Modifier
-                .align(Alignment.Start)
-                .padding(horizontal = 20.dp, vertical = 30.dp))
+            Text(
+                "This code will expire in ${min.toString().padStart(2, '0')}:${
+                    sec.toString().padStart(2, '0')
+                }"
+            )
+            Text(
+                "OTP code", style = MaterialTheme.typography.bodyMedium, modifier = Modifier
+                    .align(Alignment.Start)
+                    .padding(horizontal = 20.dp, vertical = 30.dp)
+            )
             PrestyledText().OTP()
-            Button(onClick = {}, modifier = Modifier.align(Alignment.End).padding(horizontal = 10.dp, vertical = 30.dp)) {
+            Button(
+                onClick = {},
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(horizontal = 10.dp, vertical = 30.dp)
+            ) {
                 Text("Verify ❯")
             }
         }
