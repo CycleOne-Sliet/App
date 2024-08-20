@@ -136,7 +136,7 @@ fun MainScaffold(
                 NavigationBar {
                     NavigationBarItem(
                         selected = navController.currentDestination?.route == "/profile",
-                        onClick = { navController.navigate("/profile") },
+                        onClick = { /*navController.navigate("/profile")*/ },
                         icon = {
                             Icon(Icons.Default.Person, "Profile")
                         })
@@ -148,7 +148,7 @@ fun MainScaffold(
                         })
                     NavigationBarItem(
                         selected = navController.currentDestination?.route == "/notifications",
-                        onClick = { navController.navigate("/notifications") },
+                        onClick = { /*navController.navigate("/notifications")*/ },
                         icon = {
                             Icon(Icons.Default.Notifications, "Notifications")
                         })
