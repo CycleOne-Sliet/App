@@ -47,6 +47,7 @@ class CloudFunctions {
                 httpURLConnection.outputStream.flush()
                 httpURLConnection.connect()
             }
+            Log.d("PutTokenRespCode", httpURLConnection.responseCode.toString())
             var inputStream = httpURLConnection.inputStream
             // Read the response
             val resp = inputStream.readBytes().toString(Charset.defaultCharset())
@@ -80,12 +81,15 @@ class CloudFunctions {
                 httpURLConnection.connect()
             }
             Log.d("Token Response Code", httpURLConnection.responseCode.toString())
-            var inputStream = httpURLConnection.inputStream
+            var inputStream = httpURLConnection.errorStream
+            if (httpURLConnection.errorStream == null) {
+                inputStream = httpURLConnection.inputStream
+            }
             // Read the response
             val serverResponse = inputStream.readBytes()
             Log.d("ServerResp", serverResponse.toString())
             Log.d("ServerRespHex", serverResponse.toHexString(HexFormat.UpperCase))
-            return inputStream.readBytes()
+            return serverResponse
         }
     }
 }

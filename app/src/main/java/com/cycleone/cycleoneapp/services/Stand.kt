@@ -20,6 +20,7 @@ import com.squareup.moshi.ToJson
 import com.squareup.moshi.adapter
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
+import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URI
 import java.nio.charset.Charset
@@ -61,25 +62,25 @@ sealed class Command {
     // Returns the byte representation of the command
     // Suitable to be sent to the stand
     fun getData(): ByteArray {
-        var bytes = ByteArray(this.getEncodedSize())
+        val dataWriter = ByteArrayOutputStream(this.getEncodedSize())
         when (this) {
             is Unlock -> {
                 val userBytes = user.toByteArray()
                 // Put the length of user id as the first byte
-                bytes[0] = userBytes.size.toByte()
+                dataWriter.write(userBytes.size)
                 // Put the data of the user id after it
-                userBytes.copyInto(bytes, 1)
+                dataWriter.write(userBytes)
                 // Put the length of the server token after that
-                bytes[userBytes.size + 1] = serverRespToken.size.toByte()
+                dataWriter.write(serverRespToken.size)
                 // Put the data of the server token after that
-                serverRespToken.copyInto(bytes, userBytes.size + 2)
-                return bytes
+                dataWriter.write(serverRespToken)
+                return dataWriter.toByteArray()
             }
 
             is GetStatus -> {
             }
         }
-        return bytes
+        return dataWriter.toByteArray()
     }
 }
 
@@ -210,7 +211,6 @@ class Stand : Application() {
                     super.onAvailable(network)
                     runBlocking {
                         onConnect(network)
-                        Disconnect()
                     }
                 }
 
@@ -261,6 +261,7 @@ class Stand : Application() {
             // Set the content type to octet stream, to be able to send binary data
             httpURLConnection.setRequestProperty("Content-Type", "application/octet-stream")
             // Send the Unlock Command's Data
+            Log.d("ServerRespLen", serverRespToken.size.toString())
             httpURLConnection.outputStream.write(Command.Unlock(uid, serverRespToken).getData())
             httpURLConnection.outputStream.flush()
             // Perform the request

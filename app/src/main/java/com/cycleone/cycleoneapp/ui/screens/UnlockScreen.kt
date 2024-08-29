@@ -48,7 +48,11 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.newSingleThreadContext
 import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
@@ -96,6 +100,7 @@ class UnlockScreen {
         val context = LocalContext.current
         UI(modifier, onScanSuccess = { qr ->
             scope.launch {
+                showCamera = false
                 if (userHasCycle) {
                     returnSequence(qr, context)
                 } else {
@@ -204,7 +209,7 @@ class UnlockScreen {
         transactionRunning = true
         Log.d("qrCode", qrCode)
         Stand.appContext = context
-        val macHex = decodeHexFromStr(qrCode)
+        val macHex = decodeHexFromStr(qrCode.trim())
         Log.d("QrSize", macHex.size.toString())
         if (macHex.size != 6) {
             Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
@@ -229,16 +234,57 @@ class UnlockScreen {
                     Toast.makeText(
                         context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG
                     ).show()
-                    if (resp.cycleId == null) {
-                        transactionRunning = false
+                    val token = CloudFunctions.Token(standToken)
+                    val uid = FirebaseAuth.getInstance().currentUser?.uid
+                    if (uid == null) {
                         return@Connect
                     }
-
-                    val cycleId = resp.cycleId
-                    Log.d(
-                        "CycleId Before Function Call", cycleId.toString()
+                    Log.d("Uid", uid)
+                    Log.d("serverResp", token.toHexString())
+                    resp = Stand.Unlock(
+                        socket, uid, token
                     )
-                    CloudFunctions.PutToken(standToken)
+                    Log.d("StandResp", resp.toString())
+                    Toast.makeText(
+                        context, "Successfully Unlocked the stand", Toast.LENGTH_LONG
+                    ).show()
+                    Toast.makeText(
+                        context, "Waiting for cycle to be put into the stand", Toast.LENGTH_LONG
+                    ).show()
+                    var attempts = 10
+                    CoroutineScope(Dispatchers.Main).launch(newSingleThreadContext("SyncStatus")) {
+                        while (attempts > 0) {
+                            attempts--
+                            delay(500L)
+                            val status = Stand.GetStatus(socket)
+                            if (status == null) {
+                                continue
+                            }
+                            when (status) {
+                                is Response.Ok -> {
+                                    if (status.cycleId == null) {
+                                        continue
+                                    }
+                                    val token = Stand.GetToken(socket)
+                                    CloudFunctions.PutToken(token)
+                                    return@launch
+                                }
+
+                                is Response.Err -> {
+                                    Log.e(
+                                        "StandError", resp.toString()
+                                    )
+                                    Toast.makeText(
+                                        context,
+                                        (resp as Response.Err).error,
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        }
+
+                    }
+
                 }
 
                 is Response.Err -> {
@@ -288,6 +334,7 @@ class UnlockScreen {
                         context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG
                     ).show()
                     if (resp.cycleId == null) {
+                        CloudFunctions.PutToken(standToken)
                         transactionRunning = false
                         return@Connect
                     }
@@ -302,6 +349,7 @@ class UnlockScreen {
                             resp = Stand.Unlock(
                                 socket, it1, it
                             )
+                            Log.d("StandResp", resp.toString())
                             Toast.makeText(
                                 context, "Successfully Unlocked the stand", Toast.LENGTH_LONG
                             ).show()
