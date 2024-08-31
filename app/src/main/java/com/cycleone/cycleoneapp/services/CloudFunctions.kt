@@ -14,7 +14,7 @@ import java.nio.charset.Charset
 class CloudFunctions {
     companion object {
         // lateinit var functions: FirebaseFunctions
-        val url = "https://cycleruncloudrun-bssblvm4cq-an.a.run.app"
+        val url = "https://cycleruncloudrun-313643300650.asia-northeast1.run.app"
 
         // Responsible for establishing a connection
         // Must be only called once per app instance

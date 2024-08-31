@@ -101,6 +101,7 @@ class UnlockScreen {
         UI(modifier, onScanSuccess = { qr ->
             scope.launch {
                 showCamera = false
+                Log.d("userHasCycle", userHasCycle.toString())
                 if (userHasCycle) {
                     returnSequence(qr, context)
                 } else {
