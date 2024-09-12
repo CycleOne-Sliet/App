@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.services.StandLocation
 import com.cycleone.cycleoneapp.services.getStandLocations
@@ -45,15 +44,17 @@ class AllLocations {
         }
         LaunchedEffect(user) {
             standLocations = getStandLocations()
+            Log.d("Stand Locations", standLocations.toString())
         }
         UI(modifier, navController, standLocations)
     }
 
+    @Preview
     @Composable
     fun UI(
         modifier: Modifier = Modifier,
         navController: NavController = NavProvider.controller,
-        locations: List<StandLocation>
+        locations: List<StandLocation> = listOf(StandLocation("hfewo", "kjfr"))
     ) {
         val topScrollable = ScrollableState { x -> x }
         Column(
@@ -81,12 +82,4 @@ class AllLocations {
         }
     }
 
-    @Preview
-    @Composable
-    fun Preview() {
-        UI(
-            navController = rememberNavController(),
-            locations = listOf(StandLocation("hfewo", "kjfr"))
-        )
-    }
 }

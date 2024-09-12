@@ -96,9 +96,10 @@ class Home {
                     }
                 }
                 LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
                     modifier = Modifier
-                        .padding(10.dp)
-                        .fillMaxWidth(0.9f),
+                        .padding(start = 10.dp, top = 10.dp)
+                        .fillMaxWidth(1f),
                 ) {
                     items(runBlocking { getLocations() }) { location ->
                         LocationCard().Create(location)

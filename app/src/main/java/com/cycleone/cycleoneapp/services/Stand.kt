@@ -303,4 +303,9 @@ suspend fun getStandLocations(): List<StandLocation> {
     }.toList()
 }
 
-data class StandLocation(val location: String, val photoUrl: String)
+class StandLocation(val location: String, val photoUrl: String) {
+    suspend fun getCycleNum(): Int {
+        return Firebase.firestore.collection("stands").whereEqualTo("Location", location).get()
+            .await().documents.map { d -> d["Cycles"] as List<*> }.map { c -> c.size }.sum()
+    }
+}

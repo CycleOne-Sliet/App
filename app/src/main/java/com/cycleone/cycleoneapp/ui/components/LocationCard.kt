@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,10 +26,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.services.StandLocation
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.launch
@@ -40,7 +42,7 @@ class LocationCard {
         standInfo: StandLocation = StandLocation(
             photoUrl = "https://www.google.com/images/branding/googlelogo/1x/googlelogo_light_color_272x92dp.png",
             location = "Test",
-        ), navigator: NavController = rememberNavController(), href: String = "/home"
+        ), navigator: NavController = NavProvider.controller, href: String = "/home"
     ) {
 
         var thumbnail: Bitmap? by remember {
@@ -85,8 +87,10 @@ class LocationCard {
                         .clip(
                             RoundedCornerShape(20.dp)
                         )
+                        .height(180.dp)
                         .width(180.dp),
                     bitmap = thumbnail!!.asImageBitmap(),
+                    contentScale = ContentScale.Crop,
                     contentDescription = "some useful description",
                 )
             }
