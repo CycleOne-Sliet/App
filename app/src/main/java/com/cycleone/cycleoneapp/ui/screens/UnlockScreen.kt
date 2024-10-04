@@ -50,10 +50,13 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
 import java.security.InvalidParameterException
+import java.util.concurrent.Executors
 
 fun decodeHexFromStr(hex: String): ByteArray {
     if (hex.length % 2 != 0) {
@@ -148,7 +151,7 @@ class UnlockScreen {
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = 20.dp)
                     )
-                    Button(onClick = {
+                    Button(enabled = !transactionRunning, onClick = {
                         buttonClick()
                     }) {
                         Text(buttonText)
@@ -202,8 +205,8 @@ class UnlockScreen {
         return cameraPermissionState.status.isGranted && wifiPermissionState.allPermissionsGranted
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
-    suspend fun returnSequence(qrCode: String, context: Context) {
+    @OptIn(ExperimentalStdlibApi::class, ExperimentalCoroutinesApi::class)
+    fun returnSequence(qrCode: String, context: Context) {
         if (transactionRunning) {
             return
         }
@@ -236,10 +239,7 @@ class UnlockScreen {
                         context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG
                     ).show()
                     val token = CloudFunctions.Token(standToken)
-                    val uid = FirebaseAuth.getInstance().currentUser?.uid
-                    if (uid == null) {
-                        return@Connect
-                    }
+                    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@Connect
                     Log.d("Uid", uid)
                     Log.d("serverResp", token.toHexString())
                     resp = Stand.Unlock(
@@ -253,14 +253,13 @@ class UnlockScreen {
                         context, "Waiting for cycle to be put into the stand", Toast.LENGTH_LONG
                     ).show()
                     var attempts = 10
-                    CoroutineScope(Dispatchers.Main).launch(newSingleThreadContext("SyncStatus")) {
+                    CoroutineScope(Dispatchers.Main).launch(
+                        Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+                    ) {
                         while (attempts > 0) {
                             attempts--
                             delay(500L)
-                            val status = Stand.GetStatus(socket)
-                            if (status == null) {
-                                continue
-                            }
+                            val status = Stand.GetStatus(socket) ?: (attempts++)
                             when (status) {
                                 is Response.Ok -> {
                                     if (status.cycleId == null) {
@@ -270,7 +269,6 @@ class UnlockScreen {
                                     CloudFunctions.PutToken(token)
                                     return@launch
                                 }
-
                                 is Response.Err -> {
                                     Log.e(
                                         "StandError", resp.toString()
@@ -283,11 +281,9 @@ class UnlockScreen {
                                 }
                             }
                         }
-
+                        transactionRunning = false;
                     }
-
                 }
-
                 is Response.Err -> {
                     Log.e(
                         "StandError", resp.toString()
@@ -298,11 +294,10 @@ class UnlockScreen {
                 }
             }
         }
-        transactionRunning = false
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    suspend fun unlockSequence(qrCode: String, context: Context) {
+    fun unlockSequence(qrCode: String, context: Context) {
         if (transactionRunning) {
             return
         }

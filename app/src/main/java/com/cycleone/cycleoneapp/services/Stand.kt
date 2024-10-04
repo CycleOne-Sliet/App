@@ -157,7 +157,7 @@ class Stand : Application() {
         }
 
         // Get the stand's status
-        // Must be called after Connect has been called by sandeep in app
+        // Must be called after Connect has been called in app
         fun GetStatus(network: Network): Response? {
             // Establish an Http Connection
             var httpURLConnection =
@@ -226,24 +226,13 @@ class Stand : Application() {
                     ).show()
                 }
 
-                // When the Network is Unavailable, show the toast and send the user to setting
-                // NOTE: Sometimes this triggers, even when the network may be available
-                override fun onUnavailable() {
-                    super.onUnavailable()
-                    Log.e("Unavailable", "Network is unavailable")
-                    Toast.makeText(
-                        appContext,
-                        "Turn on WiFi, or stand is offline",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
             }
 
 
             // Request android to provide the network as configured
             connectivityManager.requestNetwork(
                 networkRequest,
-                networkCallback
+                networkCallback, 1000
             )
         }
 
