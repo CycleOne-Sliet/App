@@ -6,6 +6,7 @@ import android.net.MacAddress
 import android.net.Network
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.CloudFunctions
 import com.cycleone.cycleoneapp.services.NavProvider
@@ -54,7 +56,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.newSingleThreadContext
 import java.security.InvalidParameterException
 import java.util.concurrent.Executors
 
@@ -101,6 +102,26 @@ class UnlockScreen {
         }
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
+        val cameraPermissionState = rememberPermissionState(
+            Manifest.permission.CAMERA
+        )
+
+        val wifiPermissionState = rememberMultiplePermissionsState(
+            listOf(
+                Manifest.permission.ACCESS_WIFI_STATE,
+                Manifest.permission.CHANGE_WIFI_STATE,
+                Manifest.permission.NEARBY_WIFI_DEVICES,
+                Manifest.permission.CHANGE_NETWORK_STATE,
+                Manifest.permission.INTERNET,
+                Manifest.permission.ACCESS_WIFI_STATE,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+            )
+        )
+        camAndWifiPermissions(
+            cameraPermissionState,
+            wifiPermissionState,
+            context
+        )
         UI(modifier, onScanSuccess = { qr ->
             scope.launch {
                 showCamera = false
@@ -269,6 +290,7 @@ class UnlockScreen {
                                     CloudFunctions.PutToken(token)
                                     return@launch
                                 }
+
                                 is Response.Err -> {
                                     Log.e(
                                         "StandError", resp.toString()
@@ -281,9 +303,10 @@ class UnlockScreen {
                                 }
                             }
                         }
-                        transactionRunning = false;
+                        transactionRunning = false
                     }
                 }
+
                 is Response.Err -> {
                     Log.e(
                         "StandError", resp.toString()
