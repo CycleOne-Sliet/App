@@ -190,7 +190,7 @@ class UnlockScreen {
         context: Context
     ): Boolean {
 
-        cameraPermissionState.launchPermissionRequest()
+        
         if (!cameraPermissionState.status.isGranted) {
             if (cameraPermissionState.status.shouldShowRationale) {
                 Toast.makeText(
@@ -207,8 +207,7 @@ class UnlockScreen {
             }
         }
 
-        wifiPermissionState.launchMultiplePermissionRequest()
-        if (!wifiPermissionState.allPermissionsGranted) {
+       if (!wifiPermissionState.allPermissionsGranted) {
             if (wifiPermissionState.shouldShowRationale) {
                 Toast.makeText(
                     context,
