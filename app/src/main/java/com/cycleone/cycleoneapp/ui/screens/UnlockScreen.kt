@@ -6,7 +6,6 @@ import android.net.MacAddress
 import android.net.Network
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,7 +31,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.CloudFunctions
 import com.cycleone.cycleoneapp.services.NavProvider
@@ -125,6 +123,7 @@ class UnlockScreen {
         UI(modifier, onScanSuccess = { qr ->
             scope.launch {
                 showCamera = false
+                Log.d("QR Scanned", qr)
                 Log.d("userHasCycle", userHasCycle.toString())
                 if (userHasCycle) {
                     returnSequence(qr, context)
@@ -190,7 +189,7 @@ class UnlockScreen {
         context: Context
     ): Boolean {
 
-        
+
         if (!cameraPermissionState.status.isGranted) {
             if (cameraPermissionState.status.shouldShowRationale) {
                 Toast.makeText(
@@ -207,7 +206,7 @@ class UnlockScreen {
             }
         }
 
-       if (!wifiPermissionState.allPermissionsGranted) {
+        if (!wifiPermissionState.allPermissionsGranted) {
             if (wifiPermissionState.shouldShowRationale) {
                 Toast.makeText(
                     context,
