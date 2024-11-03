@@ -3,7 +3,6 @@ package com.cycleone.cycleoneapp.ui.screens
 import android.Manifest
 import android.content.Context
 import android.net.MacAddress
-import android.net.Network
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -12,9 +11,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,23 +40,15 @@ import com.cycleone.cycleoneapp.services.Response
 import com.cycleone.cycleoneapp.services.Stand
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
-import com.google.accompanist.permissions.PermissionState
-import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.security.InvalidParameterException
-import java.util.concurrent.Executors
 
 fun decodeHexFromStr(hex: String): ByteArray {
     if (hex.length % 2 != 0) {
@@ -66,10 +59,15 @@ fun decodeHexFromStr(hex: String): ByteArray {
     }
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 class UnlockScreen {
-    var transactionRunning = false
 
-    @OptIn(ExperimentalStdlibApi::class, ExperimentalPermissionsApi::class)
+    companion object {
+        var transactionRunning = false
+        var userHasCycle = true
+    }
+
+    @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     fun Create(modifier: Modifier = Modifier) {
         var uid by remember {
@@ -79,46 +77,27 @@ class UnlockScreen {
             NavProvider.controller.navigate("/sign_in")
             return
         }
-        var userHasCycle by remember {
-            mutableStateOf(true)
-        }
         Firebase.firestore.collection("users").document(uid!!).get().addOnSuccessListener { snap ->
             if (snap.data?.get("HasCycle") != null) {
                 userHasCycle = snap.data?.get("HasCycle")!! as Boolean
             }
         }
         Log.d("UID", uid.toString())
-        rememberMultiplePermissionsState(
-            listOf(Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.CHANGE_WIFI_STATE)
-        )
-
-        rememberPermissionState(
-            Manifest.permission.CAMERA
-        )
         var showCamera by remember {
             mutableStateOf(false)
         }
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
-        val cameraPermissionState = rememberPermissionState(
-            Manifest.permission.CAMERA
-        )
-
-        val wifiPermissionState = rememberMultiplePermissionsState(
+        val permissionStates = rememberMultiplePermissionsState(
             listOf(
+                Manifest.permission.CAMERA,
                 Manifest.permission.ACCESS_WIFI_STATE,
                 Manifest.permission.CHANGE_WIFI_STATE,
-                Manifest.permission.NEARBY_WIFI_DEVICES,
                 Manifest.permission.CHANGE_NETWORK_STATE,
                 Manifest.permission.INTERNET,
                 Manifest.permission.ACCESS_WIFI_STATE,
                 Manifest.permission.ACCESS_COARSE_LOCATION,
             )
-        )
-        camAndWifiPermissions(
-            cameraPermissionState,
-            wifiPermissionState,
-            context
         )
         UI(modifier, onScanSuccess = { qr ->
             scope.launch {
@@ -137,7 +116,7 @@ class UnlockScreen {
                         userHasCycle = snap.data?.get("HasCycle")!! as Boolean
                     }
                 }
-        }, showCamera = showCamera, buttonClick = {
+        }, showCamera = showCamera, permissionState = permissionStates, buttonClick = {
             showCamera = true
         }, buttonText = if (userHasCycle) "Return" else "Scan")
     }
@@ -147,6 +126,7 @@ class UnlockScreen {
     fun UI(
         modifier: Modifier = Modifier,
         onScanSuccess: (String) -> Unit = {},
+        permissionState: MultiplePermissionsState = rememberMultiplePermissionsState(listOf()),
         showCamera: Boolean = false,
         buttonClick: () -> Unit = {},
         buttonText: String = "Scan",
@@ -166,91 +146,78 @@ class UnlockScreen {
                     QrCode.startCamera(lifecycleOwner = lifecycleOwner, onSuccess = onScanSuccess)
                 } else {
                     Image(painter = painterResource(id = R.drawable.unlock_image), "Unlock Image")
-                    Text(
-                        "Scan QR Code to \nUnlock",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(bottom = 20.dp)
-                    )
-                    Button(enabled = !transactionRunning, onClick = {
-                        buttonClick()
-                    }) {
-                        Text(buttonText)
-                        Icon(Icons.Default.Search, "QR")
+                    if (permissionState.allPermissionsGranted) {
+                        if (transactionRunning) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.width(64.dp),
+                            )
+                        } else {
+                            Text(
+                                "Scan QR Code to \nUnlock",
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(bottom = 20.dp)
+                            )
+                            Button(enabled = !transactionRunning, onClick = {
+                                buttonClick()
+                            }) {
+                                Text(buttonText)
+                                Icon(Icons.Default.Search, "QR")
+                            }
+                        }
+                    } else {
+                        Column {
+                            val textToShow = if (permissionState.shouldShowRationale) {
+                                // If the user has denied the permission but the rationale can be shown,
+                                // then gently explain why the app requires this permission
+                                "The camera permission is required to scan the stand's QR, and the wifi permissions are required to connect to the stand"
+                            } else {
+                                // If it's the first time the user lands on this feature, or the user
+                                // doesn't want to be asked again for this permission, explain that the
+                                // permission is required
+                                "Without these permission, the app cannot function" +
+                                        "Please grant the permissions\n" + "These permissions will only be used while scanning the QR"
+                            }
+                            Text(textToShow)
+                            Button(
+
+                                onClick = { permissionState.launchMultiplePermissionRequest() }) {
+                                Text("Request camera and wifi permissions")
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    @OptIn(ExperimentalPermissionsApi::class)
-    fun camAndWifiPermissions(
-        cameraPermissionState: PermissionState,
-        wifiPermissionState: MultiplePermissionsState,
-        context: Context
-    ): Boolean {
-
-
-        if (!cameraPermissionState.status.isGranted) {
-            if (cameraPermissionState.status.shouldShowRationale) {
-                Toast.makeText(
-                    context,
-                    "Camera permission is needed to scan\nthe qr codes of stand",
-                    Toast.LENGTH_LONG
-                ).show()
-            } else {
-                Toast.makeText(
-                    context,
-                    "Please grant the permission for camera in the settings",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-
-        if (!wifiPermissionState.allPermissionsGranted) {
-            if (wifiPermissionState.shouldShowRationale) {
-                Toast.makeText(
-                    context,
-                    "Wifi permission is needed to scan\nthe qr codes of stand",
-                    Toast.LENGTH_LONG
-                ).show()
-            } else {
-                Toast.makeText(
-                    context,
-                    "Please grant the permission for wifi in the settings",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-        return cameraPermissionState.status.isGranted && wifiPermissionState.allPermissionsGranted
-    }
 
     @OptIn(ExperimentalStdlibApi::class, ExperimentalCoroutinesApi::class)
-    fun returnSequence(qrCode: String, context: Context) {
-        if (transactionRunning) {
-            return
-        }
-        transactionRunning = true
-        Log.d("qrCode", qrCode)
-        Stand.appContext = context
-        val macHex = decodeHexFromStr(qrCode.trim())
-        Log.d("QrSize", macHex.size.toString())
-        if (macHex.size != 6) {
-            Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
-            transactionRunning = false
-            return
-        }
-        val mac: MacAddress = MacAddress.fromBytes(macHex)
-        print(mac)
-        Stand.Connect(
-            mac
-        ) { socket: Network ->
+    suspend fun returnSequence(qrCode: String, context: Context) {
+        try {
+            if (transactionRunning) {
+                return
+            }
+            transactionRunning = true
+            Log.d("qrCode", qrCode)
+            Stand.appContext = context
+            val macHex = decodeHexFromStr(qrCode.trim())
+            Log.d("QrSize", macHex.size.toString())
+            if (macHex.size != 6) {
+                Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
+                return
+            }
+            val mac: MacAddress = MacAddress.fromBytes(macHex)
+            print(mac)
+            val socket = Stand.Connect(
+                mac
+            ) ?: return
+
             Log.d("Stand", "Connecting")
             var resp = Stand.GetStatus(socket)
             val standToken = Stand.GetToken(socket)
             print(resp)
             if (resp == null) {
-                transactionRunning = false
-                return@Connect
+                return
             }
             when (resp) {
                 is Response.Ok -> {
@@ -258,7 +225,7 @@ class UnlockScreen {
                         context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG
                     ).show()
                     val token = CloudFunctions.Token(standToken)
-                    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@Connect
+                    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
                     Log.d("Uid", uid)
                     Log.d("serverResp", token.toHexString())
                     resp = Stand.Unlock(
@@ -272,37 +239,32 @@ class UnlockScreen {
                         context, "Waiting for cycle to be put into the stand", Toast.LENGTH_LONG
                     ).show()
                     var attempts = 10
-                    CoroutineScope(Dispatchers.Main).launch(
-                        Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-                    ) {
-                        while (attempts > 0) {
-                            attempts--
-                            delay(500L)
-                            val status = Stand.GetStatus(socket) ?: (attempts++)
-                            when (status) {
-                                is Response.Ok -> {
-                                    if (status.cycleId == null) {
-                                        continue
-                                    }
-                                    val token = Stand.GetToken(socket)
-                                    CloudFunctions.PutToken(token)
-                                    return@launch
+                    while (attempts > 0) {
+                        attempts--
+                        val status = Stand.GetStatus(socket) ?: (attempts++)
+                        when (status) {
+                            is Response.Ok -> {
+                                if (status.cycleId == null) {
+                                    continue
                                 }
+                                val token = Stand.GetToken(socket)
+                                CloudFunctions.PutToken(token)
+                            }
 
-                                is Response.Err -> {
-                                    Log.e(
-                                        "StandError", resp.toString()
-                                    )
-                                    Toast.makeText(
-                                        context,
-                                        (resp as Response.Err).error,
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
+                            is Response.Err -> {
+                                Log.e(
+                                    "StandError", resp.toString()
+                                )
+                                Toast.makeText(
+                                    context,
+                                    (resp as Response.Err).error,
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                         }
-                        transactionRunning = false
+                        delay(1000L)
                     }
+                    transactionRunning = false
                 }
 
                 is Response.Err -> {
@@ -313,37 +275,39 @@ class UnlockScreen {
                         context, resp.error, Toast.LENGTH_LONG
                     ).show()
                 }
+
             }
+        } finally {
+            transactionRunning = false
         }
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    fun unlockSequence(qrCode: String, context: Context) {
-        if (transactionRunning) {
-            return
-        }
-        transactionRunning = true
-        Log.d("qrCode", qrCode)
-        Stand.appContext = context
-        val macHex = decodeHexFromStr(qrCode)
-        Log.d("QrSize", macHex.size.toString())
-        if (macHex.size != 6) {
-            Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
-            transactionRunning = false
-            return
-        }
-        val mac: MacAddress = MacAddress.fromBytes(macHex)
-        print(mac)
-        Stand.Connect(
-            mac
-        ) { socket: Network ->
+    suspend fun unlockSequence(qrCode: String, context: Context) {
+        try {
+            if (transactionRunning) {
+                return
+            }
+            transactionRunning = true
+            Log.d("qrCode", qrCode)
+            Stand.appContext = context
+            val macHex = decodeHexFromStr(qrCode)
+            Log.d("QrSize", macHex.size.toString())
+            if (macHex.size != 6) {
+                Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
+                return
+            }
+            val mac: MacAddress = MacAddress.fromBytes(macHex)
+            print(mac)
+            val socket = Stand.Connect(
+                mac
+            ) ?: return
             Log.d("Stand", "Connecting")
             var resp = Stand.GetStatus(socket)
             val standToken = Stand.GetToken(socket)
             print(resp)
             if (resp == null) {
-                transactionRunning = false
-                return@Connect
+                return
             }
             when (resp) {
                 is Response.Ok -> {
@@ -352,8 +316,6 @@ class UnlockScreen {
                     ).show()
                     if (resp.cycleId == null) {
                         CloudFunctions.PutToken(standToken)
-                        transactionRunning = false
-                        return@Connect
                     }
                     val cycleId = resp.cycleId
                     Log.d(
@@ -382,7 +344,10 @@ class UnlockScreen {
                         context, (resp as Response.Err).error, Toast.LENGTH_LONG
                     ).show()
                 }
+
             }
+        } finally {
+            transactionRunning = false
         }
     }
 }

@@ -18,6 +18,7 @@ import com.squareup.moshi.FromJson
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.ToJson
 import com.squareup.moshi.adapter
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
@@ -186,7 +187,7 @@ class Stand : Application() {
 
         // Connects to the stand over the mac address
 
-        fun Connect(mac: MacAddress, onConnect: suspend (Network) -> Unit) {
+        suspend fun Connect(mac: MacAddress): Network? {
             // Used to configure the wifi network
             // We are setting the Ssid to CycleOneS1
             // Password to CycleOne and mac address to whatever that was passed in
@@ -194,7 +195,7 @@ class Stand : Application() {
                 WifiNetworkSpecifier.Builder().setWpa2Passphrase("CycleOne")
                     .setBssid(mac).setSsid("CycleOneS1").setIsHiddenSsid(true)
                     .build()
-
+            val networkChannel = Channel<Network?>()
             // Configuring the request for wifi from the android
             // We are specifying that we need wifi and we don't want to route internet over that
             // wifi
@@ -210,30 +211,48 @@ class Stand : Application() {
                 override fun onAvailable(network: Network) {
                     super.onAvailable(network)
                     runBlocking {
-                        onConnect(network)
+                        networkChannel.send(network)
                     }
                 }
+
+                override fun onUnavailable() {
+                    super.onUnavailable()
+                    runBlocking {
+                        Log.e("Unavailable", "Network is not found")
+                        Toast.makeText(
+                            appContext,
+                            "Stand is not available, Check if a stand is near",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        networkChannel.send(null)
+                    }
+                }
+
 
                 // Called when the Wifi is Blocked, We send the user to Settings to unblock it
                 override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                     super.onBlockedStatusChanged(network, blocked)
-                    if (blocked)
+                    if (blocked) {
                         Log.e("Unavailable", "Network is Blocked")
-                    Toast.makeText(
-                        appContext,
-                        "WiFi is Blocked, Please Enable it in settings",
-                        Toast.LENGTH_LONG
-                    ).show()
+                        Toast.makeText(
+                            appContext,
+                            "WiFi is Blocked, Please Enable it in settings",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        runBlocking {
+                            networkChannel.send(null)
+                        }
+                    }
                 }
 
             }
-
 
             // Request android to provide the network as configured
             connectivityManager.requestNetwork(
                 networkRequest,
                 networkCallback, 10000
             )
+            return networkChannel.receive()
         }
 
         // Used for sending the unlock request to the stand
