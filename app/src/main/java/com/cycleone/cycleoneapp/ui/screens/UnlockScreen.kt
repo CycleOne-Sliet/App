@@ -264,7 +264,6 @@ class UnlockScreen {
                         }
                         delay(1000L)
                     }
-                    transactionRunning = false
                 }
 
                 is Response.Err -> {
