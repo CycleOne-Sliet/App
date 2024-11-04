@@ -210,7 +210,7 @@ class UnlockScreen {
             print(mac)
             val socket = Stand.Connect(
                 mac
-            ) ?: return
+            )
 
             Log.d("Stand", "Connecting")
             var resp = Stand.GetStatus(socket)
@@ -300,7 +300,7 @@ class UnlockScreen {
             print(mac)
             val socket = Stand.Connect(
                 mac
-            ) ?: return
+            )
             Log.d("Stand", "Connecting")
             var resp = Stand.GetStatus(socket)
             val standToken = Stand.GetToken(socket)

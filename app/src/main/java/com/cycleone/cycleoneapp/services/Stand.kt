@@ -187,7 +187,7 @@ class Stand : Application() {
 
         // Connects to the stand over the mac address
 
-        suspend fun Connect(mac: MacAddress): Network? {
+        suspend fun Connect(mac: MacAddress): Network {
             // Used to configure the wifi network
             // We are setting the Ssid to CycleOneS1
             // Password to CycleOne and mac address to whatever that was passed in
@@ -195,7 +195,7 @@ class Stand : Application() {
                 WifiNetworkSpecifier.Builder().setWpa2Passphrase("CycleOne")
                     .setBssid(mac).setSsid("CycleOneS1").setIsHiddenSsid(true)
                     .build()
-            val networkChannel = Channel<Network?>()
+            val networkChannel = Channel<Network>()
             // Configuring the request for wifi from the android
             // We are specifying that we need wifi and we don't want to route internet over that
             // wifi
@@ -224,7 +224,6 @@ class Stand : Application() {
                             "Stand is not available, Check if a stand is near",
                             Toast.LENGTH_LONG
                         ).show()
-                        networkChannel.send(null)
                     }
                 }
 
@@ -239,9 +238,6 @@ class Stand : Application() {
                             "WiFi is Blocked, Please Enable it in settings",
                             Toast.LENGTH_LONG
                         ).show()
-                        runBlocking {
-                            networkChannel.send(null)
-                        }
                     }
                 }
 
