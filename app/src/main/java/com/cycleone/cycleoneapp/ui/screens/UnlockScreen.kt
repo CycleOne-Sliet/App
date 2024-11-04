@@ -3,8 +3,8 @@ package com.cycleone.cycleoneapp.ui.screens
 import android.Manifest
 import android.content.Context
 import android.net.MacAddress
+import android.os.StrictMode
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -47,7 +47,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
@@ -65,6 +65,7 @@ class UnlockScreen {
     companion object {
         var transactionRunning = false
         var userHasCycle = true
+
     }
 
     @OptIn(ExperimentalPermissionsApi::class)
@@ -100,22 +101,31 @@ class UnlockScreen {
             )
         )
         UI(modifier, onScanSuccess = { qr ->
-            scope.launch {
-                showCamera = false
-                Log.d("QR Scanned", qr)
-                Log.d("userHasCycle", userHasCycle.toString())
-                if (userHasCycle) {
-                    returnSequence(qr, context)
-                } else {
-                    unlockSequence(qr, context)
-                }
-            }
-            Firebase.firestore.collection("users").document(uid!!).get()
-                .addOnSuccessListener { snap ->
-                    if (snap.data?.get("HasCycle") != null) {
-                        userHasCycle = snap.data?.get("HasCycle")!! as Boolean
+            Log.d("UnlockBtn", "Starting new thread")
+            val policy = StrictMode.ThreadPolicy.Builder().permitNetwork().build()
+            StrictMode.setThreadPolicy(policy)
+
+            val thread = Thread {
+                val policy = StrictMode.ThreadPolicy.Builder().permitNetwork().build()
+                StrictMode.setThreadPolicy(policy)
+                runBlocking {
+                    showCamera = false
+                    Log.d("QR Scanned", qr)
+                    Log.d("userHasCycle", userHasCycle.toString())
+                    if (userHasCycle) {
+                        returnSequence(qr, context)
+                    } else {
+                        unlockSequence(qr, context)
                     }
                 }
+                Firebase.firestore.collection("users").document(uid!!).get()
+                    .addOnSuccessListener { snap ->
+                        if (snap.data?.get("HasCycle") != null) {
+                            userHasCycle = snap.data?.get("HasCycle")!! as Boolean
+                        }
+                    }
+            }
+            thread.start()
         }, showCamera = showCamera, permissionState = permissionStates, buttonClick = {
             showCamera = true
         }, buttonText = if (userHasCycle) "Return" else "Scan")
@@ -221,9 +231,6 @@ class UnlockScreen {
             }
             when (resp) {
                 is Response.Ok -> {
-                    Toast.makeText(
-                        context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG
-                    ).show()
                     val token = CloudFunctions.Token(standToken)
                     val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
                     Log.d("Uid", uid)
@@ -232,12 +239,6 @@ class UnlockScreen {
                         socket, uid, token
                     )
                     Log.d("StandResp", resp.toString())
-                    Toast.makeText(
-                        context, "Successfully Unlocked the stand", Toast.LENGTH_LONG
-                    ).show()
-                    Toast.makeText(
-                        context, "Waiting for cycle to be put into the stand", Toast.LENGTH_LONG
-                    ).show()
                     var attempts = 10
                     while (attempts > 0) {
                         attempts--
@@ -255,11 +256,6 @@ class UnlockScreen {
                                 Log.e(
                                     "StandError", resp.toString()
                                 )
-                                Toast.makeText(
-                                    context,
-                                    (resp as Response.Err).error,
-                                    Toast.LENGTH_LONG
-                                ).show()
                             }
                         }
                         delay(1000L)
@@ -270,9 +266,6 @@ class UnlockScreen {
                     Log.e(
                         "StandError", resp.toString()
                     )
-                    Toast.makeText(
-                        context, resp.error, Toast.LENGTH_LONG
-                    ).show()
                 }
 
             }
@@ -310,9 +303,6 @@ class UnlockScreen {
             }
             when (resp) {
                 is Response.Ok -> {
-                    Toast.makeText(
-                        context, "${resp.cycleId} : ${resp.isUnlocked}", Toast.LENGTH_LONG
-                    ).show()
                     if (resp.cycleId == null) {
                         CloudFunctions.PutToken(standToken)
                     }
@@ -328,9 +318,6 @@ class UnlockScreen {
                                 socket, it1, it
                             )
                             Log.d("StandResp", resp.toString())
-                            Toast.makeText(
-                                context, "Successfully Unlocked the stand", Toast.LENGTH_LONG
-                            ).show()
                         }
                     }
                 }
@@ -339,9 +326,6 @@ class UnlockScreen {
                     Log.e(
                         "StandError", resp.toString()
                     )
-                    Toast.makeText(
-                        context, (resp as Response.Err).error, Toast.LENGTH_LONG
-                    ).show()
                 }
 
             }

@@ -217,14 +217,12 @@ class Stand : Application() {
 
                 override fun onUnavailable() {
                     super.onUnavailable()
-                    runBlocking {
-                        Log.e("Unavailable", "Network is not found")
-                        Toast.makeText(
-                            appContext,
-                            "Stand is not available, Check if a stand is near",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+                    Log.e("Unavailable", "Network is not found")
+                    Toast.makeText(
+                        appContext,
+                        "Stand is not available, Check if a stand is near",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
 
 
