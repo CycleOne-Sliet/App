@@ -2,6 +2,7 @@ package com.cycleone.cycleoneapp.services
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.ConnectivityManager.NetworkCallback
 import android.net.MacAddress
@@ -9,9 +10,12 @@ import android.net.Network
 import android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET
 import android.net.NetworkCapabilities.TRANSPORT_WIFI
 import android.net.NetworkRequest
+import android.net.wifi.WifiManager
 import android.net.wifi.WifiNetworkSpecifier
+import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
+import androidx.core.content.ContextCompat.startActivity
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.squareup.moshi.FromJson
@@ -187,10 +191,16 @@ class Stand : Application() {
 
         // Connects to the stand over the mac address
 
-        suspend fun Connect(mac: MacAddress): Network {
+        suspend fun Connect(mac: MacAddress, context: Context): Network {
             // Used to configure the wifi network
             // We are setting the Ssid to CycleOneS1
             // Password to CycleOne and mac address to whatever that was passed in
+            this.appContext = context
+            val wifiManager: WifiManager =
+                context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            if (wifiManager.wifiState != WifiManager.WIFI_STATE_ENABLED) {
+                startActivity(this.appContext, Intent(Settings.ACTION_WIFI_SETTINGS), null)
+            }
             val wifiNetworkSpecifier =
                 WifiNetworkSpecifier.Builder().setWpa2Passphrase("CycleOne")
                     .setBssid(mac).setSsid("CycleOneS1").setIsHiddenSsid(true)

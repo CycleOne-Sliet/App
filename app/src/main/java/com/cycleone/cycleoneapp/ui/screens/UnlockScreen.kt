@@ -209,7 +209,6 @@ class UnlockScreen {
             }
             transactionRunning = true
             Log.d("qrCode", qrCode)
-            Stand.appContext = context
             val macHex = decodeHexFromStr(qrCode.trim())
             Log.d("QrSize", macHex.size.toString())
             if (macHex.size != 6) {
@@ -219,7 +218,7 @@ class UnlockScreen {
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
             val socket = Stand.Connect(
-                mac
+                mac, context
             )
 
             Log.d("Stand", "Connecting")
@@ -282,7 +281,6 @@ class UnlockScreen {
             }
             transactionRunning = true
             Log.d("qrCode", qrCode)
-            Stand.appContext = context
             val macHex = decodeHexFromStr(qrCode)
             Log.d("QrSize", macHex.size.toString())
             if (macHex.size != 6) {
@@ -292,7 +290,7 @@ class UnlockScreen {
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
             val socket = Stand.Connect(
-                mac
+                mac, context
             )
             Log.d("Stand", "Connecting")
             var resp = Stand.GetStatus(socket)
