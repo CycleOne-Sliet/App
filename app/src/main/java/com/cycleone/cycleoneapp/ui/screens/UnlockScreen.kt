@@ -251,7 +251,7 @@ class UnlockScreen {
                                 )
                             }
                         }
-                        delay(100L)
+                        delay(500L)
                     }
                 }
 
@@ -263,6 +263,8 @@ class UnlockScreen {
                 }
 
             }
+        } catch (e: Throwable) {
+            Log.e("ReturnSeq", e.toString())
         } finally {
             transactionRunning = false
         }
@@ -322,6 +324,8 @@ class UnlockScreen {
                 }
 
             }
+        } catch (e: Throwable) {
+            Log.e("UnlockSeq", e.toString())
         } finally {
             transactionRunning = false
         }
