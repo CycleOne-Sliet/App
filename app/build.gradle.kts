@@ -13,7 +13,7 @@ android {
     defaultConfig {
         applicationId = "com.cycleone.cycleoneapp"
         minSdk = 29
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 10003
         versionName = "1.000.3"
 

@@ -31,15 +31,15 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
-class PrestyledText() {
+class PrestyledText {
     @Composable
     fun Regular(
+        modifier: Modifier = Modifier,
         placeholder: String = "",
         onChange: (String) -> Unit = {},
         enabled: Boolean = true,
         label: String = "",
         icon: ImageVector? = null,
-        modifier: Modifier = Modifier,
     ) {
         var c by remember { mutableStateOf("") }
         TextField(
@@ -65,12 +65,12 @@ class PrestyledText() {
 
     @Composable
     fun Password(
+        modifier: Modifier = Modifier,
         placeholder: String = "",
         onChange: (String) -> Unit = {},
         enabled: Boolean = true,
         label: String = "",
         icon: ImageVector? = null,
-        modifier: Modifier = Modifier,
     ) {
         var c by remember { mutableStateOf("") }
         TextField(
@@ -146,8 +146,8 @@ class PrestyledText() {
     @Preview
     fun prev() {
         Column {
-            Regular("Preview", {}, true, label = "Test", Icons.Default.Build)
-            Password("Preview", {}, true, label = "Test", Icons.TwoTone.Add)
+            Regular(Modifier, "Preview", {}, true, label = "Test", Icons.Default.Build)
+            Password(Modifier, "Preview", {}, true, label = "Test", Icons.TwoTone.Add)
             OTP()
         }
     }

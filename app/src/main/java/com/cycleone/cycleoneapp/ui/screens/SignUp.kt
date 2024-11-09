@@ -42,7 +42,7 @@ import kotlinx.coroutines.launch
 
 class SignUp {
 
-    suspend fun onSignUp(
+    fun onSignUp(
         context: Context,
         email: String,
         password: String,

@@ -13,23 +13,19 @@ import java.nio.charset.Charset
 // Class used to communicate with the backend
 class CloudFunctions {
     companion object {
-        // lateinit var functions: FirebaseFunctions
-        val url = "https://cycleruncloudrun-313643300650.asia-northeast1.run.app"
+        private const val URL = "https://cycleruncloudrun-313643300650.asia-northeast1.run.app"
 
         // Responsible for establishing a connection
         // Must be only called once per app instance
-        fun Connect() {
-            //functions = FirebaseFunctions.getInstance()
-        }
 
-        suspend fun PutToken(standToken: ByteArray) {
+        suspend fun putToken(standToken: ByteArray) {
             Log.d("CloudFunctions", "Sending Status")
             val token = Base64.encodeToString(standToken, Base64.NO_WRAP)
             Log.d("PutToken", token)
 
-            var httpURLConnection =
+            val httpURLConnection =
                 withContext(Dispatchers.IO) {
-                    URI.create("$url/update_data").toURL().openConnection() as HttpURLConnection
+                    URI.create("$URL/update_data").toURL().openConnection() as HttpURLConnection
                 }
             // Set the http request method to POST
             httpURLConnection.requestMethod = "POST"
@@ -39,7 +35,7 @@ class CloudFunctions {
             val userToken = FirebaseAuth.getInstance().getAccessToken(true).await().token
             httpURLConnection.setRequestProperty(
                 "Authorization",
-                "Bearer ${userToken}"
+                "Bearer $userToken"
             )
             // Send the Unlock Command's Data
             withContext(Dispatchers.IO) {
@@ -48,7 +44,7 @@ class CloudFunctions {
                 httpURLConnection.connect()
             }
             Log.d("PutTokenRespCode", httpURLConnection.responseCode.toString())
-            var inputStream = httpURLConnection.inputStream
+            val inputStream = httpURLConnection.inputStream
             // Read the response
             val resp = inputStream.readBytes().toString(Charset.defaultCharset())
             Log.d("Unlock Resp", resp)
@@ -56,14 +52,14 @@ class CloudFunctions {
 
         // Responsible for providing the encrypted token for unlocking the stand
         @OptIn(ExperimentalStdlibApi::class)
-        suspend fun Token(standToken: ByteArray): ByteArray {
+        suspend fun token(standToken: ByteArray): ByteArray {
             Log.d("CloudFunctions", "Sending Status")
             val token = Base64.encodeToString(standToken, Base64.NO_WRAP)
             Log.d("PutToken", token)
 
-            var httpURLConnection =
+            val httpURLConnection =
                 withContext(Dispatchers.IO) {
-                    (URI.create("$url/get_token").toURL().openConnection() as HttpURLConnection)
+                    (URI.create("$URL/get_token").toURL().openConnection() as HttpURLConnection)
                 }
             // Set the http request method to POST
             httpURLConnection.requestMethod = "POST"

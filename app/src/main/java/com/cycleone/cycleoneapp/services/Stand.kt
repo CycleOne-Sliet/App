@@ -1,5 +1,6 @@
 package com.cycleone.cycleoneapp.services
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -15,7 +16,7 @@ import android.net.wifi.WifiNetworkSpecifier
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
-import androidx.core.content.ContextCompat.startActivity
+import androidx.core.app.ActivityCompat.startActivityForResult
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.squareup.moshi.FromJson
@@ -58,9 +59,9 @@ sealed class Command {
 
     // Returns the size of the Command, in bytes
     fun getEncodedSize(): Int {
-        when (this) {
-            is Unlock -> return user.toByteArray().size + serverRespToken.size + 2
-            is GetStatus -> return 0
+        return when (this) {
+            is Unlock -> user.toByteArray().size + serverRespToken.size + 2
+            is GetStatus -> 0
         }
     }
 
@@ -140,13 +141,13 @@ class Stand : Application() {
         // Disconnecting from the stand
         // Should be called as soon as the exchange between stand and mobile has occurred
         // Frees up the wifi
-        fun Disconnect() {
+        fun disconnect() {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         }
 
         fun GetToken(network: Network): ByteArray {
             // Establish an Http Connection
-            var httpURLConnection =
+            val httpURLConnection =
                 network.openConnection(
                     URI.create("http://10.10.10.10/").toURL()
                 ) as HttpURLConnection
@@ -163,9 +164,9 @@ class Stand : Application() {
 
         // Get the stand's status
         // Must be called after Connect has been called in app
-        fun GetStatus(network: Network): Response? {
+        fun getStatus(network: Network): Response? {
             // Establish an Http Connection
-            var httpURLConnection =
+            val httpURLConnection =
                 network.openConnection(
                     URI.create("http://10.10.10.10/").toURL()
                 ) as HttpURLConnection
@@ -191,15 +192,22 @@ class Stand : Application() {
 
         // Connects to the stand over the mac address
 
-        suspend fun Connect(mac: MacAddress, context: Context): Network {
+        suspend fun connect(mac: MacAddress, context: Context): Network {
             // Used to configure the wifi network
             // We are setting the Ssid to CycleOneS1
             // Password to CycleOne and mac address to whatever that was passed in
             this.appContext = context
+            connectivityManager =
+                appContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
             val wifiManager: WifiManager =
                 context.getSystemService(Context.WIFI_SERVICE) as WifiManager
             if (wifiManager.wifiState != WifiManager.WIFI_STATE_ENABLED) {
-                startActivity(this.appContext, Intent(Settings.ACTION_WIFI_SETTINGS), null)
+                startActivityForResult(
+                    context as Activity,
+                    Intent(Settings.ACTION_WIFI_SETTINGS),
+                    6,
+                    null
+                )
             }
             val wifiNetworkSpecifier =
                 WifiNetworkSpecifier.Builder().setWpa2Passphrase("CycleOne")
@@ -213,8 +221,6 @@ class Stand : Application() {
                 .setNetworkSpecifier(wifiNetworkSpecifier).removeCapability(
                     NET_CAPABILITY_INTERNET
                 ).build()
-            connectivityManager =
-                appContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
             // Callbacks for when network state changes
             networkCallback = object : NetworkCallback() {
                 // When network becomes available, call the onConnect function, and then disconnect
@@ -260,10 +266,10 @@ class Stand : Application() {
         }
 
         // Used for sending the unlock request to the stand
-        fun Unlock(network: Network, uid: String, serverRespToken: ByteArray): Response? {
+        fun unlock(network: Network, uid: String, serverRespToken: ByteArray): Response? {
 
             // Establish the connection
-            var httpURLConnection =
+            val httpURLConnection =
                 network.openConnection(
                     URI.create("http://10.10.10.10/").toURL()
                 ) as HttpURLConnection
@@ -318,6 +324,6 @@ suspend fun getStandLocations(): List<StandLocation> {
 class StandLocation(val location: String, val photoUrl: String) {
     suspend fun getCycleNum(): Int {
         return Firebase.firestore.collection("stands").whereEqualTo("Location", location).get()
-            .await().documents.map { d -> d["Cycles"] as List<*> }.map { c -> c.size }.sum()
+            .await().documents.map { d -> d["Cycles"] as List<*> }.sumOf { c -> c.size }
     }
 }

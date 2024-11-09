@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +44,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.security.InvalidParameterException
@@ -71,7 +69,7 @@ class UnlockScreen {
     @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     fun Create(modifier: Modifier = Modifier) {
-        var uid by remember {
+        val uid by remember {
             mutableStateOf(Firebase.auth.uid)
         }
         if (uid == null) {
@@ -87,7 +85,6 @@ class UnlockScreen {
         var showCamera by remember {
             mutableStateOf(false)
         }
-        val scope = rememberCoroutineScope()
         val context = LocalContext.current
         val permissionStates = rememberMultiplePermissionsState(
             listOf(
@@ -102,8 +99,6 @@ class UnlockScreen {
         )
         UI(modifier, onScanSuccess = { qr ->
             Log.d("UnlockBtn", "Starting new thread")
-            val policy = StrictMode.ThreadPolicy.Builder().permitNetwork().build()
-            StrictMode.setThreadPolicy(policy)
 
             val thread = Thread {
                 val policy = StrictMode.ThreadPolicy.Builder().permitNetwork().build()
@@ -201,7 +196,7 @@ class UnlockScreen {
     }
 
 
-    @OptIn(ExperimentalStdlibApi::class, ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalStdlibApi::class)
     suspend fun returnSequence(qrCode: String, context: Context) {
         try {
             if (transactionRunning) {
@@ -217,38 +212,37 @@ class UnlockScreen {
             }
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
-            val socket = Stand.Connect(
+            val socket = Stand.connect(
                 mac, context
             )
 
             Log.d("Stand", "Connecting")
-            var resp = Stand.GetStatus(socket)
-            val standToken = Stand.GetToken(socket)
+            var resp = Stand.getStatus(socket)
             print(resp)
             if (resp == null) {
                 return
             }
             when (resp) {
                 is Response.Ok -> {
-                    val token = CloudFunctions.Token(standToken)
+                    val token = CloudFunctions.token(Stand.GetToken(socket))
                     val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
                     Log.d("Uid", uid)
                     Log.d("serverResp", token.toHexString())
-                    resp = Stand.Unlock(
+                    resp = Stand.unlock(
                         socket, uid, token
                     )
                     Log.d("StandResp", resp.toString())
-                    var attempts = 10
+                    var attempts = 100
                     while (attempts > 0) {
                         attempts--
-                        val status = Stand.GetStatus(socket) ?: (attempts++)
+                        val status = Stand.getStatus(socket) ?: (attempts++)
                         when (status) {
                             is Response.Ok -> {
                                 if (status.cycleId == null) {
                                     continue
                                 }
-                                val token = Stand.GetToken(socket)
-                                CloudFunctions.PutToken(token)
+                                CloudFunctions.putToken(Stand.GetToken(socket))
+                                Stand.disconnect()
                             }
 
                             is Response.Err -> {
@@ -257,7 +251,7 @@ class UnlockScreen {
                                 )
                             }
                         }
-                        delay(1000L)
+                        delay(100L)
                     }
                 }
 
@@ -265,6 +259,7 @@ class UnlockScreen {
                     Log.e(
                         "StandError", resp.toString()
                     )
+                    Stand.disconnect()
                 }
 
             }
@@ -289,11 +284,11 @@ class UnlockScreen {
             }
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
-            val socket = Stand.Connect(
+            val socket = Stand.connect(
                 mac, context
             )
             Log.d("Stand", "Connecting")
-            var resp = Stand.GetStatus(socket)
+            var resp = Stand.getStatus(socket)
             val standToken = Stand.GetToken(socket)
             print(resp)
             if (resp == null) {
@@ -302,17 +297,17 @@ class UnlockScreen {
             when (resp) {
                 is Response.Ok -> {
                     if (resp.cycleId == null) {
-                        CloudFunctions.PutToken(standToken)
+                        CloudFunctions.putToken(standToken)
                     }
                     val cycleId = resp.cycleId
                     Log.d(
                         "CycleId Before Function Call", cycleId.toString()
                     )
-                    CloudFunctions.Token(standToken).let {
+                    CloudFunctions.token(standToken).let {
                         FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
                             Log.d("Uid", it1)
                             Log.d("serverResp", it.toHexString())
-                            resp = Stand.Unlock(
+                            resp = Stand.unlock(
                                 socket, it1, it
                             )
                             Log.d("StandResp", resp.toString())

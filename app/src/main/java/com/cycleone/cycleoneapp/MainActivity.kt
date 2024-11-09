@@ -27,7 +27,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.cycleone.cycleoneapp.services.CloudFunctions
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.screens.AllLocations
 import com.cycleone.cycleoneapp.ui.screens.ForgotPassword
@@ -43,7 +42,6 @@ import com.google.firebase.auth.FirebaseAuth
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        CloudFunctions.Connect()
         setContent {
             CycleoneAppTheme {
                 // A surface container using the 'background' color from the theme
@@ -119,7 +117,7 @@ fun MainScaffold(
     navController: NavController = rememberNavController(),
     showTopBar: Boolean,
     showBottomBar: Boolean,
-    content: @Composable() (Modifier) -> Unit
+    content: @Composable (Modifier) -> Unit
 ) {
     Scaffold(
         topBar = {

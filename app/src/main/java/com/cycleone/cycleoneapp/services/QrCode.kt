@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -24,9 +23,6 @@ class QrCode : Application() {
 
     companion object {
 
-        var foundQrCode = false
-
-        @OptIn(ExperimentalPermissionsApi::class)
         @Composable
         fun startCamera(onSuccess: (String) -> Unit, lifecycleOwner: LifecycleOwner) {
             // AndroidView Necessary because Compose does not allow for streaming data from camera
