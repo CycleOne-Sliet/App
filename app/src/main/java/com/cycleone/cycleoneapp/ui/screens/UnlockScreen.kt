@@ -31,6 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.CloudFunctions
 import com.cycleone.cycleoneapp.services.NavProvider
@@ -68,7 +69,10 @@ class UnlockScreen {
 
     @OptIn(ExperimentalPermissionsApi::class)
     @Composable
-    fun Create(modifier: Modifier = Modifier) {
+    fun Create(
+        modifier: Modifier = Modifier,
+        navController: NavController = NavProvider.controller
+    ) {
         val uid by remember {
             mutableStateOf(Firebase.auth.uid)
         }
@@ -99,28 +103,24 @@ class UnlockScreen {
         )
         UI(modifier, onScanSuccess = { qr ->
             Log.d("UnlockBtn", "Starting new thread")
-
-            val thread = Thread {
-                val policy = StrictMode.ThreadPolicy.Builder().permitNetwork().build()
-                StrictMode.setThreadPolicy(policy)
-                runBlocking {
-                    showCamera = false
-                    Log.d("QR Scanned", qr)
-                    Log.d("userHasCycle", userHasCycle.toString())
-                    if (userHasCycle) {
-                        returnSequence(qr, context)
-                    } else {
-                        unlockSequence(qr, context)
+            val policy = StrictMode.ThreadPolicy.Builder().permitNetwork().build()
+            StrictMode.setThreadPolicy(policy)
+            runBlocking {
+                showCamera = false
+                Log.d("QR Scanned", qr)
+                Log.d("userHasCycle", userHasCycle.toString())
+                if (userHasCycle) {
+                    returnSequence(qr, context)
+                } else {
+                    unlockSequence(qr, context)
+                }
+            }
+            Firebase.firestore.collection("users").document(uid!!).get()
+                .addOnSuccessListener { snap ->
+                    if (snap.data?.get("HasCycle") != null) {
+                        userHasCycle = snap.data?.get("HasCycle")!! as Boolean
                     }
                 }
-                Firebase.firestore.collection("users").document(uid!!).get()
-                    .addOnSuccessListener { snap ->
-                        if (snap.data?.get("HasCycle") != null) {
-                            userHasCycle = snap.data?.get("HasCycle")!! as Boolean
-                        }
-                    }
-            }
-            thread.start()
         }, showCamera = showCamera, permissionState = permissionStates, buttonClick = {
             showCamera = true
         }, buttonText = if (userHasCycle) "Return" else "Scan")
@@ -212,61 +212,68 @@ class UnlockScreen {
             }
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
-            val socket = Stand.connect(
-                mac, context
-            )
+            Stand.connect(
+                mac, context, onError = {
+                    transactionRunning = false
+                }
+            ) { socket ->
+                try {
+                    Log.d("Stand", "Connecting")
+                    var resp = Stand.getStatus(socket)
+                    print(resp)
+                    if (resp == null) {
+                        return@connect
+                    }
+                    when (resp) {
+                        is Response.Ok -> {
+                            val token = CloudFunctions.token(Stand.GetToken(socket))
+                            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@connect
+                            Log.d("Uid", uid)
+                            Log.d("serverResp", token.toHexString())
+                            resp = Stand.unlock(
+                                socket, uid, token
+                            )
+                            Log.d("StandResp", resp.toString())
+                            var attempts = 100
+                            while (attempts > 0) {
+                                attempts--
+                                val status = Stand.getStatus(socket) ?: (attempts++)
+                                when (status) {
+                                    is Response.Ok -> {
+                                        if (status.cycleId == null) {
+                                            continue
+                                        }
+                                        CloudFunctions.putToken(Stand.GetToken(socket))
+                                        Stand.disconnect()
+                                    }
 
-            Log.d("Stand", "Connecting")
-            var resp = Stand.getStatus(socket)
-            print(resp)
-            if (resp == null) {
-                return
-            }
-            when (resp) {
-                is Response.Ok -> {
-                    val token = CloudFunctions.token(Stand.GetToken(socket))
-                    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-                    Log.d("Uid", uid)
-                    Log.d("serverResp", token.toHexString())
-                    resp = Stand.unlock(
-                        socket, uid, token
-                    )
-                    Log.d("StandResp", resp.toString())
-                    var attempts = 100
-                    while (attempts > 0) {
-                        attempts--
-                        val status = Stand.getStatus(socket) ?: (attempts++)
-                        when (status) {
-                            is Response.Ok -> {
-                                if (status.cycleId == null) {
-                                    continue
+                                    is Response.Err -> {
+                                        Log.e(
+                                            "StandError", resp.toString()
+                                        )
+                                    }
                                 }
-                                CloudFunctions.putToken(Stand.GetToken(socket))
-                                Stand.disconnect()
-                            }
-
-                            is Response.Err -> {
-                                Log.e(
-                                    "StandError", resp.toString()
-                                )
+                                delay(500L)
                             }
                         }
-                        delay(500L)
+
+                        is Response.Err -> {
+                            Log.e(
+                                "StandError", resp.toString()
+                            )
+                            Stand.disconnect()
+                        }
+
                     }
+                } catch (e: Throwable) {
+                    Log.e("ReturnSeq", e.toString())
+                    Log.e("ReturnSeq", e.stackTraceToString())
+                } finally {
+                    transactionRunning = false
                 }
-
-                is Response.Err -> {
-                    Log.e(
-                        "StandError", resp.toString()
-                    )
-                    Stand.disconnect()
-                }
-
             }
         } catch (e: Throwable) {
             Log.e("ReturnSeq", e.toString())
-        } finally {
-            transactionRunning = false
         }
     }
 
@@ -286,43 +293,50 @@ class UnlockScreen {
             }
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
-            val socket = Stand.connect(
-                mac, context
-            )
-            Log.d("Stand", "Connecting")
-            var resp = Stand.getStatus(socket)
-            val standToken = Stand.GetToken(socket)
-            print(resp)
-            if (resp == null) {
-                return
-            }
-            when (resp) {
-                is Response.Ok -> {
-                    if (resp.cycleId == null) {
-                        CloudFunctions.putToken(standToken)
+            Stand.connect(
+                mac, context, onError = { transactionRunning = false }
+            ) { socket ->
+                try {
+                    Log.d("Stand", "Connecting")
+                    var resp = Stand.getStatus(socket)
+                    val standToken = Stand.GetToken(socket)
+                    print(resp)
+                    if (resp == null) {
+                        return@connect
                     }
-                    val cycleId = resp.cycleId
-                    Log.d(
-                        "CycleId Before Function Call", cycleId.toString()
-                    )
-                    CloudFunctions.token(standToken).let {
-                        FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
-                            Log.d("Uid", it1)
-                            Log.d("serverResp", it.toHexString())
-                            resp = Stand.unlock(
-                                socket, it1, it
+                    when (resp) {
+                        is Response.Ok -> {
+                            if (resp.cycleId == null) {
+                                CloudFunctions.putToken(standToken)
+                            }
+                            val cycleId = resp.cycleId
+                            Log.d(
+                                "CycleId Before Function Call", cycleId.toString()
                             )
-                            Log.d("StandResp", resp.toString())
+                            CloudFunctions.token(standToken).let {
+                                FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
+                                    Log.d("Uid", it1)
+                                    Log.d("serverResp", it.toHexString())
+                                    resp = Stand.unlock(
+                                        socket, it1, it
+                                    )
+                                    Log.d("StandResp", resp.toString())
+                                }
+                            }
                         }
+
+                        is Response.Err -> {
+                            Log.e(
+                                "StandError", resp.toString()
+                            )
+                        }
+
                     }
+                } catch (e: Throwable) {
+                    Log.e("UnlockSeq", e.toString())
+                } finally {
+                    transactionRunning = false
                 }
-
-                is Response.Err -> {
-                    Log.e(
-                        "StandError", resp.toString()
-                    )
-                }
-
             }
         } catch (e: Throwable) {
             Log.e("UnlockSeq", e.toString())

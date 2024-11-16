@@ -23,7 +23,6 @@ import com.squareup.moshi.FromJson
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.ToJson
 import com.squareup.moshi.adapter
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
@@ -192,7 +191,12 @@ class Stand : Application() {
 
         // Connects to the stand over the mac address
 
-        suspend fun connect(mac: MacAddress, context: Context): Network {
+        suspend fun connect(
+            mac: MacAddress,
+            context: Context,
+            onError: () -> Unit,
+            onConnect: suspend (Network) -> Unit
+        ) {
             // Used to configure the wifi network
             // We are setting the Ssid to CycleOneS1
             // Password to CycleOne and mac address to whatever that was passed in
@@ -213,7 +217,6 @@ class Stand : Application() {
                 WifiNetworkSpecifier.Builder().setWpa2Passphrase("CycleOne")
                     .setBssid(mac).setSsid("CycleOneS1").setIsHiddenSsid(true)
                     .build()
-            val networkChannel = Channel<Network>()
             // Configuring the request for wifi from the android
             // We are specifying that we need wifi and we don't want to route internet over that
             // wifi
@@ -227,8 +230,13 @@ class Stand : Application() {
                 override fun onAvailable(network: Network) {
                     super.onAvailable(network)
                     runBlocking {
-                        networkChannel.send(network)
+                        onConnect(network)
                     }
+                }
+
+                override fun onLost(network: Network) {
+                    super.onLost(network)
+                    onError()
                 }
 
                 override fun onUnavailable() {
@@ -239,6 +247,7 @@ class Stand : Application() {
                         "Stand is not available, Check if a stand is near",
                         Toast.LENGTH_LONG
                     ).show()
+                    onError()
                 }
 
 
@@ -246,6 +255,7 @@ class Stand : Application() {
                 override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                     super.onBlockedStatusChanged(network, blocked)
                     if (blocked) {
+                        onError()
                         Log.e("Unavailable", "Network is Blocked")
                         Toast.makeText(
                             appContext,
@@ -260,9 +270,8 @@ class Stand : Application() {
             // Request android to provide the network as configured
             connectivityManager.requestNetwork(
                 networkRequest,
-                networkCallback, 20000
+                networkCallback, 4000
             )
-            return networkChannel.receive()
         }
 
         // Used for sending the unlock request to the stand
