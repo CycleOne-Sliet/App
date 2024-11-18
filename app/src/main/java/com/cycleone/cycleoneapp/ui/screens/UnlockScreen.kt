@@ -45,7 +45,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.security.InvalidParameterException
 
@@ -221,48 +220,10 @@ class UnlockScreen {
                     Log.d("Uid", uid)
                     Log.d("serverResp", token.toHexString())
                     Log.d("Stand", "Connecting")
-                    var resp = Stand.returnCmd(socket, uid, token)
+                    val resp = Stand.returnCmd(socket, uid, token)
                     print(resp)
-                    if (resp == null) {
-                        return@connect
-                    }
-                    when (resp) {
-                        is Response.Ok -> {
-                            resp = Stand.unlock(
-                                socket, uid, token
-                            )
-                            Log.d("StandResp", resp.toString())
-                            var attempts = 100
-                            while (attempts > 0) {
-                                attempts--
-                                val status = Stand.getStatus(socket) ?: (attempts++)
-                                when (status) {
-                                    is Response.Ok -> {
-                                        if (status.cycleId == null) {
-                                            continue
-                                        }
-                                        CloudFunctions.putToken(Stand.getToken(socket))
-                                        Stand.disconnect()
-                                    }
-
-                                    is Response.Err -> {
-                                        Log.e(
-                                            "StandError", resp.toString()
-                                        )
-                                    }
-                                }
-                                delay(1000L)
-                            }
-                        }
-
-                        is Response.Err -> {
-                            Log.e(
-                                "StandError", resp.toString()
-                            )
-                            Stand.disconnect()
-                        }
-
-                    }
+                    CloudFunctions.putToken(Stand.getToken(socket))
+                    Stand.disconnect()
                 } catch (e: Throwable) {
                     Log.e("ReturnSeq", e.toString())
                     Log.e("ReturnSeq", e.stackTraceToString())
