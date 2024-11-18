@@ -3,8 +3,8 @@ package com.cycleone.cycleoneapp.ui.screens
 import android.Manifest
 import android.content.Context
 import android.net.MacAddress
-import android.os.StrictMode
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -103,8 +103,6 @@ class UnlockScreen {
         )
         UI(modifier, onScanSuccess = { qr ->
             Log.d("UnlockBtn", "Starting new thread")
-            val policy = StrictMode.ThreadPolicy.Builder().permitNetwork().build()
-            StrictMode.setThreadPolicy(policy)
             runBlocking {
                 showCamera = false
                 Log.d("QR Scanned", qr)
@@ -218,18 +216,18 @@ class UnlockScreen {
                 }
             ) { socket ->
                 try {
+                    val token = CloudFunctions.token(Stand.getToken(socket))
+                    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@connect
+                    Log.d("Uid", uid)
+                    Log.d("serverResp", token.toHexString())
                     Log.d("Stand", "Connecting")
-                    var resp = Stand.getStatus(socket)
+                    var resp = Stand.returnCmd(socket, uid, token)
                     print(resp)
                     if (resp == null) {
                         return@connect
                     }
                     when (resp) {
                         is Response.Ok -> {
-                            val token = CloudFunctions.token(Stand.GetToken(socket))
-                            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@connect
-                            Log.d("Uid", uid)
-                            Log.d("serverResp", token.toHexString())
                             resp = Stand.unlock(
                                 socket, uid, token
                             )
@@ -243,7 +241,7 @@ class UnlockScreen {
                                         if (status.cycleId == null) {
                                             continue
                                         }
-                                        CloudFunctions.putToken(Stand.GetToken(socket))
+                                        CloudFunctions.putToken(Stand.getToken(socket))
                                         Stand.disconnect()
                                     }
 
@@ -253,7 +251,7 @@ class UnlockScreen {
                                         )
                                     }
                                 }
-                                delay(500L)
+                                delay(1000L)
                             }
                         }
 
@@ -272,8 +270,12 @@ class UnlockScreen {
                     transactionRunning = false
                 }
             }
+        } catch (e: NumberFormatException) {
+            val t = Toast(context)
+            t.setText("Invalid QR")
+            t.show()
         } catch (e: Throwable) {
-            Log.e("ReturnSeq", e.toString())
+            Log.e("ReturnSeqOuter", e.toString())
         }
     }
 
@@ -299,7 +301,7 @@ class UnlockScreen {
                 try {
                     Log.d("Stand", "Connecting")
                     var resp = Stand.getStatus(socket)
-                    val standToken = Stand.GetToken(socket)
+                    val standToken = Stand.getToken(socket)
                     print(resp)
                     if (resp == null) {
                         return@connect

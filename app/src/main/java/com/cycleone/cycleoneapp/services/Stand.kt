@@ -144,7 +144,7 @@ class Stand : Application() {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         }
 
-        fun GetToken(network: Network): ByteArray {
+        fun getToken(network: Network): ByteArray {
             // Establish an Http Connection
             val httpURLConnection =
                 network.openConnection(
@@ -272,6 +272,37 @@ class Stand : Application() {
                 networkRequest,
                 networkCallback, 4000
             )
+        }
+
+        fun returnCmd(network: Network, uid: String, serverRespToken: ByteArray): ByteArray {
+
+            // Establish the connection
+            val httpURLConnection =
+                network.openConnection(
+                    URI.create("http://10.10.10.10/return").toURL()
+                ) as HttpURLConnection
+            // Set the http request method to POST
+            httpURLConnection.doOutput = true
+            httpURLConnection.requestMethod = "POST"
+            httpURLConnection.connectTimeout = 11000
+            httpURLConnection.readTimeout = 11000
+            // Set the content type to octet stream, to be able to send binary data
+            httpURLConnection.setRequestProperty("Content-Type", "application/octet-stream")
+            // Send the Unlock Command's Data
+            Log.d("ServerRespLen", serverRespToken.size.toString())
+            httpURLConnection.outputStream.write(Command.Unlock(uid, serverRespToken).getData())
+            httpURLConnection.outputStream.flush()
+            // Perform the request
+            httpURLConnection.connect()
+            // Check for any errors
+            var inputStream = httpURLConnection.errorStream
+            if (inputStream == null) {
+                inputStream = httpURLConnection.inputStream
+            }
+            Log.d("Unlock RespCode", "${httpURLConnection.responseCode}")
+            Log.d("Unlock RespMsg", httpURLConnection.responseMessage)
+            // Read the response
+            return inputStream.readBytes()
         }
 
         // Used for sending the unlock request to the stand
