@@ -63,7 +63,6 @@ class UnlockScreen {
     companion object {
         var transactionRunning = false
         var userHasCycle = true
-
     }
 
     @OptIn(ExperimentalPermissionsApi::class)
@@ -231,10 +230,16 @@ class UnlockScreen {
                     transactionRunning = false
                 }
             }
+        } catch (e: InvalidParameterException) {
+            val t = Toast(context)
+            t.setText("Invalid QR")
+            t.show()
+            transactionRunning = false
         } catch (e: NumberFormatException) {
             val t = Toast(context)
             t.setText("Invalid QR")
             t.show()
+            transactionRunning = false
         } catch (e: Throwable) {
             Log.e("ReturnSeqOuter", e.toString())
         }

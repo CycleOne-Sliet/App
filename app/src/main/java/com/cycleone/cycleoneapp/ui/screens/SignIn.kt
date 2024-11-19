@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
@@ -48,19 +50,22 @@ class SignIn {
         try {
             FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
                 .addOnFailureListener {
+                    // If sign in fails, display a message to the user.
+                    Log.w("SignIn", "signInWithEmail:failure", it)
                     Toast.makeText(
                         context,
-                        "Error while doing authentication$it",
-                        Toast.LENGTH_LONG
+                        "Authentication failed.",
+                        Toast.LENGTH_SHORT,
                     ).show()
                 }.addOnSuccessListener { authResult ->
 
                     Log.d("Finished", "Logging In")
                     if (authResult == null) {
+                        Log.w("SignIn", "signInWithEmail:failure NullResponse")
                         Toast.makeText(
                             context,
-                            "Error while doing authentication",
-                            Toast.LENGTH_LONG
+                            "Authentication failed.",
+                            Toast.LENGTH_SHORT,
                         ).show()
                     } else {
                         NavProvider.controller.navigate("/home")
@@ -92,9 +97,11 @@ class SignIn {
         }
         val context = LocalContext.current
         val coroutineScope = rememberCoroutineScope()
+        val scrollState = rememberScrollState()
         Column(
             modifier = modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(horizontal = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -125,12 +132,18 @@ class SignIn {
 
                 }, label = "Password", icon = Icons.Outlined.Lock
             )
-            Text(
-                "Forgot Password?",
+            Button(
                 modifier = Modifier
                     .padding(horizontal = 55.dp, vertical = 10.dp)
                     .align(AbsoluteAlignment.Left),
-            )
+                onClick = {
+                    NavProvider.controller.navigate("/forgot_password")
+                }) {
+                Text(
+                    "Forgot Password?",
+                )
+
+            }
             Button(
                 onClick = {
                     coroutineScope.launch {

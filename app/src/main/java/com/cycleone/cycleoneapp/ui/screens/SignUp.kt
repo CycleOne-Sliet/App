@@ -2,14 +2,18 @@ package com.cycleone.cycleoneapp.ui.screens
 
 import android.content.Context
 import android.util.Log
+import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
@@ -40,7 +44,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.launch
 
+
 class SignUp {
+    fun CharSequence?.isValidEmail() = !isNullOrEmpty() && Patterns.EMAIL_ADDRESS.matcher(this).matches()
 
     fun onSignUp(
         context: Context,
@@ -54,12 +60,25 @@ class SignUp {
             Toast.makeText(context, "Empty Mail ID", Toast.LENGTH_LONG).show()
             return
         }
+        if (!email.isValidEmail()) {
+            Toast.makeText(context, "Invalid E-Mail ID", Toast.LENGTH_LONG).show()
+            return
+
+        }
         if (password.isBlank()) {
             Toast.makeText(context, "Empty Password", Toast.LENGTH_LONG).show()
             return
         }
         if (!termsCondition) {
             Toast.makeText(context, "Check the terms and conditions", Toast.LENGTH_LONG).show()
+            return
+        }
+        if (password.length < 8) {
+            Toast.makeText(
+                context,
+                "Password should be atleast 8 characters",
+                Toast.LENGTH_LONG
+            ).show()
             return
         }
         if (password != password2) {
@@ -83,14 +102,14 @@ class SignUp {
                     Log.e("Sign In", it.toString())
                     Toast.makeText(
                         context,
-                        "Unable to create account, ${it.message}",
+                        "Unable to create account",
                         Toast.LENGTH_LONG
                     ).show()
                 }
         } catch (e: Error) {
             Toast.makeText(
                 context,
-                "Unable to create account, ${e.message}",
+                "Unable to create account",
                 Toast.LENGTH_LONG
             ).show()
             Log.e("SignUp", e.toString())
@@ -122,9 +141,11 @@ class SignUp {
         }
         val context = LocalContext.current
         val coroutineScope = rememberCoroutineScope()
+        val scrollState  = rememberScrollState()
+
         Column(
             modifier = modifier
-                .fillMaxSize()
+                .fillMaxSize().verticalScroll(scrollState)
                 .padding(horizontal = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
