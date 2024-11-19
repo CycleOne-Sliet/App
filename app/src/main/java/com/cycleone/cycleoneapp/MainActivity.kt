@@ -34,6 +34,7 @@ import com.cycleone.cycleoneapp.ui.screens.ForgotPassword
 import com.cycleone.cycleoneapp.ui.screens.Home
 import com.cycleone.cycleoneapp.ui.screens.Landing
 import com.cycleone.cycleoneapp.ui.screens.OtpScreen
+import com.cycleone.cycleoneapp.ui.screens.Profile
 import com.cycleone.cycleoneapp.ui.screens.SignIn
 import com.cycleone.cycleoneapp.ui.screens.SignUp
 import com.cycleone.cycleoneapp.ui.screens.UnlockScreen
@@ -84,6 +85,11 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
         composable("/home", deepLinks = listOf(navDeepLink { uriPattern = "$uri/home" })) {
             MainScaffold(navController = navController, showTopBar = false, showBottomBar = true) {
                 Home().Create(it)
+            }
+        }
+        composable("/profile") {
+            MainScaffold(navController = navController, showTopBar = true, showBottomBar = true) {
+                Profile().Create(it)
             }
         }
         composable(
@@ -144,7 +150,7 @@ fun MainScaffold(
                 NavigationBar {
                     NavigationBarItem(
                         selected = navController.currentDestination?.route == "/profile",
-                        onClick = { /*navController.navigate("/profile")*/ },
+                        onClick = { navController.navigate("/profile") },
                         icon = {
                             Icon(Icons.Default.Person, "Profile")
                         })

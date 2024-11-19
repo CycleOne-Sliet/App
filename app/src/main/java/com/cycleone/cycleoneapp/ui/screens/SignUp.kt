@@ -5,7 +5,6 @@ import android.util.Log
 import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
@@ -41,12 +41,14 @@ import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.PrestyledText
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.launch
 
 
 class SignUp {
-    fun CharSequence?.isValidEmail() = !isNullOrEmpty() && Patterns.EMAIL_ADDRESS.matcher(this).matches()
+    fun CharSequence?.isValidEmail() =
+        !isNullOrEmpty() && Patterns.EMAIL_ADDRESS.matcher(this).matches()
 
     fun onSignUp(
         context: Context,
@@ -56,6 +58,10 @@ class SignUp {
         name: String,
         termsCondition: Boolean
     ) {
+        if (name.isBlank()) {
+            Toast.makeText(context, "Empty Name", Toast.LENGTH_LONG).show()
+            return
+        }
         if (email.isBlank()) {
             Toast.makeText(context, "Empty Mail ID", Toast.LENGTH_LONG).show()
             return
@@ -97,7 +103,26 @@ class SignUp {
                         UserProfileChangeRequest.Builder().setDisplayName(name)
                             .build()
                     )
-                    NavProvider.controller.navigate("/home")
+                    authResult.user?.sendEmailVerification()
+                        ?.addOnSuccessListener {
+                            Toast.makeText(
+                                context,
+                                "Verification Email sent",
+                                Toast.LENGTH_LONG
+                            ).show()
+
+                            Toast.makeText(
+                                context,
+                                "Check your email",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }?.addOnFailureListener {
+                            Toast.makeText(
+                                context,
+                                "Unable to send verification email",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                 }.addOnFailureListener {
                     Log.e("Sign In", it.toString())
                     Toast.makeText(
@@ -141,11 +166,12 @@ class SignUp {
         }
         val context = LocalContext.current
         val coroutineScope = rememberCoroutineScope()
-        val scrollState  = rememberScrollState()
+        val scrollState = rememberScrollState()
 
         Column(
             modifier = modifier
-                .fillMaxSize().verticalScroll(scrollState)
+                .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(horizontal = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
