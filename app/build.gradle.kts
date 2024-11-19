@@ -4,6 +4,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
+
 }
 
 android {
@@ -95,4 +96,5 @@ dependencies {
     implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.22")
     implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 }

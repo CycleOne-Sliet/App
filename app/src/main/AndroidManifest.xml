@@ -41,6 +41,30 @@
             android:exported="true"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.CycleoneApp">
+            <intent-filter android:label="Sign In">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Accepts URIs that begin with "http://www.example.com/gizmos” -->
+                <data
+                    android:scheme="cycleone"
+                    android:host="base"
+                    android:path="/home" />
+                <!-- note that the leading "/" is required for pathPrefix-->
+            </intent-filter>
+            <intent-filter android:label="Home">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Accepts URIs that begin with "http://www.example.com/gizmos” -->
+                <data
+                    android:scheme="cycleone"
+                    android:host="base"
+                    android:path="/sign_in" />
+                <!-- note that the leading "/" is required for pathPrefix-->
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

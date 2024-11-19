@@ -27,6 +27,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.screens.AllLocations
 import com.cycleone.cycleoneapp.ui.screens.ForgotPassword
@@ -38,6 +39,12 @@ import com.cycleone.cycleoneapp.ui.screens.SignUp
 import com.cycleone.cycleoneapp.ui.screens.UnlockScreen
 import com.cycleone.cycleoneapp.ui.theme.CycleoneAppTheme
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.serialization.Serializable
+
+@Serializable
+class SignInPath
+
+val uri = "cycleone://cycleone.base"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,12 +81,15 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
                 Landing().Create(it)
             }
         }
-        composable("/home") {
+        composable("/home", deepLinks = listOf(navDeepLink { uriPattern = "$uri/home" })) {
             MainScaffold(navController = navController, showTopBar = false, showBottomBar = true) {
                 Home().Create(it)
             }
         }
-        composable("/sign_in") {
+        composable(
+            "/sign_in",
+            deepLinks = listOf(navDeepLink { uriPattern = "$uri/sign_in" })
+        ) {
             MainScaffold(navController = navController, showTopBar = false, showBottomBar = false) {
                 SignIn().Create(it)
             }
@@ -100,7 +110,7 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
             }
         }
         composable("/forgot_password") {
-            MainScaffold(navController = navController, showTopBar = true, showBottomBar = true) {
+            MainScaffold(navController = navController, showTopBar = true, showBottomBar = false) {
                 ForgotPassword().Create(it)
             }
         }

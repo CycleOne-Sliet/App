@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
@@ -32,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.ui.components.PrestyledText
+import com.cycleone.cycleoneapp.uri
+import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.FirebaseAuth
 
 
@@ -40,11 +43,18 @@ class ForgotPassword {
     fun Create(modifier: Modifier) {
         val context = LocalContext.current
         UI(modifier = modifier, onForgotPassword = { email ->
-            FirebaseAuth.getInstance().sendPasswordResetEmail(email).addOnSuccessListener {
+            FirebaseAuth.getInstance().sendPasswordResetEmail(
+                email,
+            ).addOnSuccessListener {
                 try {
                     val intent = Intent(Intent.ACTION_MAIN)
                     intent.addCategory(Intent.CATEGORY_APP_EMAIL)
                     startActivity(context, intent, null)
+                    Toast.makeText(
+                        context,
+                        "Reset link sent to mail",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } catch (e: ActivityNotFoundException) {
                     Toast.makeText(
                         context,
@@ -98,16 +108,14 @@ class ForgotPassword {
             )
 
             Button(
-                modifier = Modifier
-                    .padding(horizontal = 55.dp, vertical = 10.dp)
-                    .align(AbsoluteAlignment.Left),
+                modifier = Modifier.fillMaxWidth(0.75F),
+                shape = RoundedCornerShape(15.dp),
                 onClick = {
                     onForgotPassword(email)
                 }) {
                 Text(
                     "Forgot Password?",
                 )
-
             }
         }
     }

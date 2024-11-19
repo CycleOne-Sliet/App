@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,7 +26,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -132,18 +132,15 @@ class SignIn {
 
                 }, label = "Password", icon = Icons.Outlined.Lock
             )
-            Button(
+            Text(
                 modifier = Modifier
-                    .padding(horizontal = 55.dp, vertical = 10.dp)
-                    .align(AbsoluteAlignment.Left),
-                onClick = {
-                    NavProvider.controller.navigate("/forgot_password")
-                }) {
-                Text(
-                    "Forgot Password?",
-                )
+                    .clickable(true, onClick = {
+                        NavProvider.controller.navigate("/forgot_password")
+                    })
+                    .padding(bottom = 15.dp),
+                text = "Forgot Password?",
+            )
 
-            }
             Button(
                 onClick = {
                     coroutineScope.launch {
