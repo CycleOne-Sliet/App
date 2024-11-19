@@ -115,7 +115,7 @@ class Profile {
                 fallback = rememberVectorPainter(Icons.Default.Person),
                 placeholder = rememberVectorPainter(Icons.Default.Person),
                 modifier = Modifier
-                    .fillMaxWidth(0.3F).heightIn(0.dp, 256.dp)
+                    .fillMaxWidth(0.3F).heightIn(0.dp, 150.dp)
                     .clickable {
                         onPhotoChangeRequest()
                     }.clip(RoundedCornerShape(20.dp)),
@@ -127,7 +127,7 @@ class Profile {
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.90F)
-                    .background(MaterialTheme.colorScheme.background, RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
+                    .background(MaterialTheme.colorScheme.inversePrimary, RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
                     .padding(top = 50.dp, start = 10.dp, end = 10.dp),
             )
             {
