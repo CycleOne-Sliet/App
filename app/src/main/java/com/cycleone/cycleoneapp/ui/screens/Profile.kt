@@ -1,9 +1,5 @@
 package com.cycleone.cycleoneapp.ui.screens
 
-import android.app.Activity
-import android.content.Intent
-import android.net.Uri
-import android.provider.DocumentsContract
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,13 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat.startActivityForResult
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.google.firebase.auth.FirebaseAuth
@@ -107,18 +100,19 @@ class Profile {
 
         ) {
 
+            Log.d("Profile", user?.photoUrl.toString())
 
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current).data(user?.photoUrl)
-                    .crossfade(true).build(),
+                    .build(),
                 contentDescription = "Profile Photo",
                 fallback = rememberVectorPainter(Icons.Default.Person),
                 placeholder = rememberVectorPainter(Icons.Default.Person),
                 modifier = Modifier
-                    .fillMaxWidth(0.3F).heightIn(0.dp, 150.dp)
+                    .fillMaxWidth(0.3F)
                     .clickable {
                         onPhotoChangeRequest()
-                    }.clip(RoundedCornerShape(20.dp)),
+                    },
                 alignment = Alignment.Center,
                 contentScale = ContentScale.FillWidth
 
@@ -127,7 +121,10 @@ class Profile {
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.90F)
-                    .background(MaterialTheme.colorScheme.inversePrimary, RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
+                    .background(
+                        MaterialTheme.colorScheme.inversePrimary,
+                        RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp)
+                    )
                     .padding(top = 50.dp, start = 10.dp, end = 10.dp),
             )
             {

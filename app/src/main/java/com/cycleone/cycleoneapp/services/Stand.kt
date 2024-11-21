@@ -142,6 +142,12 @@ class Stand : Application() {
         // Frees up the wifi
         fun disconnect() {
             connectivityManager.unregisterNetworkCallback(networkCallback)
+            runBlocking {
+                NavProvider.snackbarHostState.showSnackbar(
+                    "Stand Disconnect Request sent",
+                    withDismissAction = true
+                )
+            }
         }
 
         fun getToken(network: Network): ByteArray {
@@ -274,8 +280,15 @@ class Stand : Application() {
             )
         }
 
-        fun returnCmd(network: Network, uid: String, serverRespToken: ByteArray): ByteArray {
-
+        suspend fun returnCmd(
+            network: Network,
+            uid: String,
+            serverRespToken: ByteArray
+        ): ByteArray {
+            NavProvider.snackbarHostState.showSnackbar(
+                "Sending Return command",
+                withDismissAction = true
+            )
             // Establish the connection
             val httpURLConnection =
                 network.openConnection(
@@ -294,6 +307,10 @@ class Stand : Application() {
             httpURLConnection.outputStream.flush()
             // Perform the request
             httpURLConnection.connect()
+            NavProvider.snackbarHostState.showSnackbar(
+                "Return Command sent",
+                withDismissAction = true
+            )
             // Check for any errors
             var inputStream = httpURLConnection.errorStream
             if (inputStream == null) {
@@ -301,13 +318,21 @@ class Stand : Application() {
             }
             Log.d("Unlock RespCode", "${httpURLConnection.responseCode}")
             Log.d("Unlock RespMsg", httpURLConnection.responseMessage)
+            NavProvider.snackbarHostState.showSnackbar(
+                "Stand Response code: ${httpURLConnection.responseCode}",
+                withDismissAction = true
+            )
             // Read the response
             return inputStream.readBytes()
         }
 
         // Used for sending the unlock request to the stand
-        fun unlock(network: Network, uid: String, serverRespToken: ByteArray): Response? {
+        suspend fun unlock(network: Network, uid: String, serverRespToken: ByteArray): Response? {
 
+            NavProvider.snackbarHostState.showSnackbar(
+                "Sending Unlock command",
+                withDismissAction = true
+            )
             // Establish the connection
             val httpURLConnection =
                 network.openConnection(
@@ -324,6 +349,10 @@ class Stand : Application() {
             httpURLConnection.outputStream.flush()
             // Perform the request
             httpURLConnection.connect()
+            NavProvider.snackbarHostState.showSnackbar(
+                "Unlock command sent",
+                withDismissAction = true
+            )
             // Check for any errors
             var inputStream = httpURLConnection.errorStream
             if (inputStream == null) {
@@ -332,6 +361,10 @@ class Stand : Application() {
             Log.d("Unlock RespCode", "${httpURLConnection.responseCode}")
             Log.d("Unlock RespMsg", httpURLConnection.responseMessage)
             // Read the response
+            NavProvider.snackbarHostState.showSnackbar(
+                "Stand response code: ${httpURLConnection.responseCode}",
+                withDismissAction = true
+            )
             val resp = inputStream.readBytes().toString(Charset.defaultCharset())
             Log.d("Unlock Resp", resp)
             return try {
