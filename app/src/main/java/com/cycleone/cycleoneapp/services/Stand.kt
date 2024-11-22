@@ -200,7 +200,7 @@ class Stand : Application() {
         suspend fun connect(
             mac: MacAddress,
             context: Context,
-            onError: () -> Unit,
+            onError: (String) -> Unit,
             onConnect: suspend (Network) -> Unit
         ) {
             // Used to configure the wifi network
@@ -242,7 +242,7 @@ class Stand : Application() {
 
                 override fun onLost(network: Network) {
                     super.onLost(network)
-                    onError()
+                    onError("Connection Lost")
                 }
 
                 override fun onUnavailable() {
@@ -253,7 +253,7 @@ class Stand : Application() {
                         "Stand is not available, Check if a stand is near",
                         Toast.LENGTH_LONG
                     ).show()
-                    onError()
+                    onError("Stand Unavailable")
                 }
 
 
@@ -261,7 +261,7 @@ class Stand : Application() {
                 override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                     super.onBlockedStatusChanged(network, blocked)
                     if (blocked) {
-                        onError()
+                        onError("Blocked")
                         Log.e("Unavailable", "Network is Blocked")
                         Toast.makeText(
                             appContext,

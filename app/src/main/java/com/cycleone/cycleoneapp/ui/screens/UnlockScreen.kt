@@ -244,8 +244,13 @@ class UnlockScreen {
                     NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
             }
             Stand.connect(
-                mac, context, onError = {
+                mac, context, onError = {it ->
                     onTransactionChange(false)
+                    runBlocking {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            NavProvider.snackbarHostState.showSnackbar(it)
+                        }
+                    }
                 }
             ) { socket ->
                 try {
@@ -320,7 +325,14 @@ class UnlockScreen {
                 NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
             }
             Stand.connect(
-                mac, context, onError = { onTransactionChange(false) }
+                mac, context, onError = { onTransactionChange(false)
+                    runBlocking {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            NavProvider.snackbarHostState.showSnackbar(it)
+                        }
+                    }
+                }
+
             ) { socket ->
                 try {
                     CoroutineScope(Dispatchers.Main).launch {
