@@ -225,7 +225,7 @@ class UnlockScreen {
     ) {
         try {
             if (transactionRunning) {
-                    CoroutineScope(Dispatchers.Main).launch {
+                CoroutineScope(Dispatchers.Main).launch {
                         NavProvider.snackbarHostState.showSnackbar("Some process is already running")
                 }
                 return
@@ -240,7 +240,7 @@ class UnlockScreen {
             }
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
-                CoroutineScope(Dispatchers.Main).launch {
+            CoroutineScope(Dispatchers.Main).launch {
                     NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
             }
             Stand.connect(
@@ -249,7 +249,7 @@ class UnlockScreen {
                 }
             ) { socket ->
                 try {
-                        CoroutineScope(Dispatchers.Main).launch {
+                    CoroutineScope(Dispatchers.Main).launch {
                             NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
                     }
                     val token = CloudFunctions.token(Stand.getToken(socket))
@@ -258,14 +258,14 @@ class UnlockScreen {
                     Log.d("serverResp", token.toHexString())
                     Log.d("Stand", "Connecting")
                     val resp = Stand.returnCmd(socket, uid, token)
-                        CoroutineScope(Dispatchers.Main).launch {
+                    CoroutineScope(Dispatchers.Main).launch {
                             NavProvider.snackbarHostState.showSnackbar("Return Command completed")
                     }
                     print(resp)
                     CloudFunctions.putToken(Stand.getToken(socket))
                     Stand.disconnect()
                 } catch (e: Throwable) {
-                        CoroutineScope(Dispatchers.Main).launch {
+                    CoroutineScope(Dispatchers.Main).launch {
                             NavProvider.snackbarHostState.showSnackbar("Err: $e")
                     }
                     Log.e("ReturnSeq", e.toString())
