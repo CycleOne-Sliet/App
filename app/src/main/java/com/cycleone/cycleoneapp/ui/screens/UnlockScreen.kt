@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.net.MacAddress
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +45,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
@@ -62,7 +62,6 @@ class UnlockScreen {
 
     companion object {
         var transactionRunning = false
-        var userHasCycle = true
     }
 
     @OptIn(ExperimentalPermissionsApi::class)
@@ -71,6 +70,13 @@ class UnlockScreen {
         modifier: Modifier = Modifier,
         navController: NavController = NavProvider.controller
     ) {
+
+        var transactionRunningLocal by remember {
+            mutableStateOf(false)
+        }
+        var userHasCycle by remember {
+            mutableStateOf(true)
+        }
         val uid by remember {
             mutableStateOf(Firebase.auth.uid)
         }
@@ -79,6 +85,7 @@ class UnlockScreen {
             return
         }
         Firebase.firestore.collection("users").document(uid!!).get().addOnSuccessListener { snap ->
+            transactionRunningLocal = false
             if (snap.data?.get("HasCycle") != null) {
                 userHasCycle = snap.data?.get("HasCycle")!! as Boolean
             }
@@ -99,22 +106,36 @@ class UnlockScreen {
                 Manifest.permission.ACCESS_COARSE_LOCATION,
             )
         )
-        UI(modifier, onScanSuccess = { qr ->
+        val scope = rememberCoroutineScope()
+        UI(modifier, transactionRunning = transactionRunningLocal, onScanSuccess = { qr ->
             Log.d("UnlockBtn", "Starting new thread")
-            runBlocking {
-                showCamera = false
-                Log.d("QR Scanned", qr)
-                Log.d("userHasCycle", userHasCycle.toString())
-                if (userHasCycle) {
-                    returnSequence(qr, context)
-                } else {
-                    unlockSequence(qr, context)
-                }
-            }
             Firebase.firestore.collection("users").document(uid!!).get()
                 .addOnSuccessListener { snap ->
                     if (snap.data?.get("HasCycle") != null) {
                         userHasCycle = snap.data?.get("HasCycle")!! as Boolean
+                        scope.launch {
+                            showCamera = false
+                            Log.d("QR Scanned", qr)
+                            Log.d("userHasCycle", userHasCycle.toString())
+
+                            if (userHasCycle) {
+                                returnSequence(
+                                    qr,
+                                    context,
+                                    { t -> transactionRunningLocal = t; transactionRunning = t })
+                            } else {
+                                unlockSequence(
+                                    qr,
+                                    context,
+                                    { t -> transactionRunningLocal = t; transactionRunning = t })
+                            }
+                        }
+                        Firebase.firestore.collection("users").document(uid!!).get()
+                            .addOnSuccessListener { snap ->
+                                if (snap.data?.get("HasCycle") != null) {
+                                    userHasCycle = snap.data?.get("HasCycle")!! as Boolean
+                                }
+                            }
                     }
                 }
         }, showCamera = showCamera, permissionState = permissionStates, buttonClick = {
@@ -131,6 +152,7 @@ class UnlockScreen {
         showCamera: Boolean = false,
         buttonClick: () -> Unit = {},
         buttonText: String = "Scan",
+        transactionRunning: Boolean = true,
     ) {
 
         val lifecycleOwner = LocalLifecycleOwner.current
@@ -193,12 +215,17 @@ class UnlockScreen {
 
 
     @OptIn(ExperimentalStdlibApi::class)
-    suspend fun returnSequence(qrCode: String, context: Context) {
+    suspend fun returnSequence(
+        qrCode: String,
+        context: Context,
+        onTransactionChange: (Boolean) -> Unit
+    ) {
         try {
             if (transactionRunning) {
+                NavProvider.snackbarHostState.showSnackbar("Some process is already running")
                 return
             }
-            transactionRunning = true
+            onTransactionChange(true)
             Log.d("qrCode", qrCode)
             val macHex = decodeHexFromStr(qrCode.trim())
             Log.d("QrSize", macHex.size.toString())
@@ -208,50 +235,56 @@ class UnlockScreen {
             }
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
+            NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
             Stand.connect(
                 mac, context, onError = {
-                    transactionRunning = false
+                    onTransactionChange(false)
                 }
             ) { socket ->
                 try {
+                    NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
                     val token = CloudFunctions.token(Stand.getToken(socket))
                     val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@connect
                     Log.d("Uid", uid)
                     Log.d("serverResp", token.toHexString())
                     Log.d("Stand", "Connecting")
                     val resp = Stand.returnCmd(socket, uid, token)
+                    NavProvider.snackbarHostState.showSnackbar("Return Command completed")
                     print(resp)
                     CloudFunctions.putToken(Stand.getToken(socket))
                     Stand.disconnect()
                 } catch (e: Throwable) {
+                    NavProvider.snackbarHostState.showSnackbar("Err: $e")
                     Log.e("ReturnSeq", e.toString())
                     Log.e("ReturnSeq", e.stackTraceToString())
                 } finally {
-                    transactionRunning = false
+                    onTransactionChange(false)
                 }
             }
         } catch (e: InvalidParameterException) {
-            val t = Toast(context)
-            t.setText("Invalid QR")
-            t.show()
-            transactionRunning = false
+            NavProvider.snackbarHostState.showSnackbar("Invalid QR")
         } catch (e: NumberFormatException) {
-            val t = Toast(context)
-            t.setText("Invalid QR")
-            t.show()
-            transactionRunning = false
+            NavProvider.snackbarHostState.showSnackbar("Invalid QR")
         } catch (e: Throwable) {
+            NavProvider.snackbarHostState.showSnackbar("Err: $e")
             Log.e("ReturnSeqOuter", e.toString())
+        } finally {
+            onTransactionChange(false)
         }
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    suspend fun unlockSequence(qrCode: String, context: Context) {
+    suspend fun unlockSequence(
+        qrCode: String,
+        context: Context,
+        onTransactionChange: (Boolean) -> Unit
+    ) {
         try {
             if (transactionRunning) {
+                NavProvider.snackbarHostState.showSnackbar("Some process is already running")
                 return
             }
-            transactionRunning = true
+            onTransactionChange(true)
             Log.d("qrCode", qrCode)
             val macHex = decodeHexFromStr(qrCode)
             Log.d("QrSize", macHex.size.toString())
@@ -261,12 +294,15 @@ class UnlockScreen {
             }
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
+            NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
             Stand.connect(
-                mac, context, onError = { transactionRunning = false }
+                mac, context, onError = { onTransactionChange(false) }
             ) { socket ->
                 try {
+                    NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
                     Log.d("Stand", "Connecting")
                     var resp = Stand.getStatus(socket)
+                    NavProvider.snackbarHostState.showSnackbar("Stand Status: ${resp}")
                     val standToken = Stand.getToken(socket)
                     print(resp)
                     if (resp == null) {
@@ -276,24 +312,28 @@ class UnlockScreen {
                         is Response.Ok -> {
                             if (resp.cycleId == null) {
                                 CloudFunctions.putToken(standToken)
+                                NavProvider.snackbarHostState.showSnackbar("Data updated in server")
                             }
                             val cycleId = resp.cycleId
                             Log.d(
                                 "CycleId Before Function Call", cycleId.toString()
                             )
                             CloudFunctions.token(standToken).let {
+                                NavProvider.snackbarHostState.showSnackbar("Unlock token received from backend")
                                 FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
                                     Log.d("Uid", it1)
                                     Log.d("serverResp", it.toHexString())
                                     resp = Stand.unlock(
                                         socket, it1, it
                                     )
+                                    NavProvider.snackbarHostState.showSnackbar("Stand Unlocked")
                                     Log.d("StandResp", resp.toString())
                                 }
                             }
                         }
 
                         is Response.Err -> {
+                            NavProvider.snackbarHostState.showSnackbar("Err: ${resp.toString()}")
                             Log.e(
                                 "StandError", resp.toString()
                             )
@@ -301,15 +341,17 @@ class UnlockScreen {
 
                     }
                 } catch (e: Throwable) {
+                    NavProvider.snackbarHostState.showSnackbar("Err: $e")
                     Log.e("UnlockSeq", e.toString())
                 } finally {
-                    transactionRunning = false
+                    onTransactionChange(false)
                 }
             }
         } catch (e: Throwable) {
+            NavProvider.snackbarHostState.showSnackbar("Err: $e")
             Log.e("UnlockSeq", e.toString())
         } finally {
-            transactionRunning = false
+            onTransactionChange(false)
         }
     }
 }
