@@ -45,7 +45,9 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
@@ -222,7 +224,11 @@ class UnlockScreen {
     ) {
         try {
             if (transactionRunning) {
-                NavProvider.snackbarHostState.showSnackbar("Some process is already running")
+                runBlocking {
+                    launch{
+                        NavProvider.snackbarHostState.showSnackbar("Some process is already running")
+                    }
+                }
                 return
             }
             onTransactionChange(true)
@@ -235,26 +241,42 @@ class UnlockScreen {
             }
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
-            NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
+            runBlocking {
+                launch {
+                    NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
+                }
+            }
             Stand.connect(
                 mac, context, onError = {
                     onTransactionChange(false)
                 }
             ) { socket ->
                 try {
-                    NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
+                    runBlocking {
+                        launch {
+                            NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
+                        }
+                    }
                     val token = CloudFunctions.token(Stand.getToken(socket))
                     val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@connect
                     Log.d("Uid", uid)
                     Log.d("serverResp", token.toHexString())
                     Log.d("Stand", "Connecting")
                     val resp = Stand.returnCmd(socket, uid, token)
-                    NavProvider.snackbarHostState.showSnackbar("Return Command completed")
+                    runBlocking {
+                        launch {
+                            NavProvider.snackbarHostState.showSnackbar("Return Command completed")
+                        }
+                    }
                     print(resp)
                     CloudFunctions.putToken(Stand.getToken(socket))
                     Stand.disconnect()
                 } catch (e: Throwable) {
-                    NavProvider.snackbarHostState.showSnackbar("Err: $e")
+                    runBlocking {
+                        launch {
+                            NavProvider.snackbarHostState.showSnackbar("Err: $e")
+                        }
+                    }
                     Log.e("ReturnSeq", e.toString())
                     Log.e("ReturnSeq", e.stackTraceToString())
                 } finally {
@@ -281,7 +303,11 @@ class UnlockScreen {
     ) {
         try {
             if (transactionRunning) {
-                NavProvider.snackbarHostState.showSnackbar("Some process is already running")
+                runBlocking {
+                    launch {
+                        NavProvider.snackbarHostState.showSnackbar("Some process is already running")
+                    }
+                }
                 return
             }
             onTransactionChange(true)
@@ -294,15 +320,27 @@ class UnlockScreen {
             }
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
-            NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
+            runBlocking {
+                launch {
+                    NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
+                }
+            }
             Stand.connect(
                 mac, context, onError = { onTransactionChange(false) }
             ) { socket ->
                 try {
-                    NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
+                    runBlocking {
+                        launch {
+                            NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
+                        }
+                    }
                     Log.d("Stand", "Connecting")
                     var resp = Stand.getStatus(socket)
-                    NavProvider.snackbarHostState.showSnackbar("Stand Status: ${resp}")
+                    runBlocking {
+                        launch {
+                            NavProvider.snackbarHostState.showSnackbar("Stand Status: ${resp}")
+                        }
+                    }
                     val standToken = Stand.getToken(socket)
                     print(resp)
                     if (resp == null) {
@@ -312,28 +350,44 @@ class UnlockScreen {
                         is Response.Ok -> {
                             if (resp.cycleId == null) {
                                 CloudFunctions.putToken(standToken)
-                                NavProvider.snackbarHostState.showSnackbar("Data updated in server")
+                                runBlocking {
+                                    launch {
+                                        NavProvider.snackbarHostState.showSnackbar("Data updated in server")
+                                    }
+                                }
                             }
                             val cycleId = resp.cycleId
                             Log.d(
                                 "CycleId Before Function Call", cycleId.toString()
                             )
                             CloudFunctions.token(standToken).let {
-                                NavProvider.snackbarHostState.showSnackbar("Unlock token received from backend")
+                                runBlocking {
+                                 launch {
+                                     NavProvider.snackbarHostState.showSnackbar("Unlock token received from backend")
+                                 }
+                                }
                                 FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
                                     Log.d("Uid", it1)
                                     Log.d("serverResp", it.toHexString())
                                     resp = Stand.unlock(
                                         socket, it1, it
                                     )
-                                    NavProvider.snackbarHostState.showSnackbar("Stand Unlocked")
+                                    runBlocking {
+                                        launch {
+                                            NavProvider.snackbarHostState.showSnackbar("Stand Unlocked")
+                                        }
+                                    }
                                     Log.d("StandResp", resp.toString())
                                 }
                             }
                         }
 
                         is Response.Err -> {
-                            NavProvider.snackbarHostState.showSnackbar("Err: ${resp.toString()}")
+                            runBlocking {
+                                launch {
+                                    NavProvider.snackbarHostState.showSnackbar("Err: ${resp.toString()}")
+                                }
+                            }
                             Log.e(
                                 "StandError", resp.toString()
                             )
