@@ -271,7 +271,7 @@ class Stand : Application() {
             // Request android to provide the network as configured
             connectivityManager.requestNetwork(
                 networkRequest,
-                networkCallback, 4000
+                networkCallback, 12000
             )
         }
 
