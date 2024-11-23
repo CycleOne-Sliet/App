@@ -48,6 +48,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
@@ -63,7 +64,8 @@ fun decodeHexFromStr(hex: String): ByteArray {
 class UnlockScreen {
 
     companion object {
-        var transactionRunning = false
+        @Volatile
+        var transactionRunning = 0
     }
 
     @OptIn(ExperimentalPermissionsApi::class)
@@ -73,12 +75,6 @@ class UnlockScreen {
         navController: NavController = NavProvider.controller
     ) {
 
-        var transactionRunningLocal by remember {
-            mutableStateOf(true)
-        }
-        var userHasCycle by remember {
-            mutableStateOf(true)
-        }
         val uid by remember {
             mutableStateOf(Firebase.auth.uid)
         }
@@ -86,12 +82,18 @@ class UnlockScreen {
             NavProvider.controller.navigate("/sign_in")
             return
         }
-        Firebase.firestore.collection("users").document(uid!!).get().addOnSuccessListener { snap ->
-            transactionRunningLocal = false
-            if (snap.data?.get("HasCycle") != null) {
-                userHasCycle = snap.data?.get("HasCycle")!! as Boolean
-            }
+        var userHasCycle: Boolean? by remember {
+            mutableStateOf(
+                runBlocking {
+                    val a = (Firebase.firestore.collection("users").document(uid!!).get()
+                        .await().data?.get("HasCycle")) as Boolean
+                    Log.d("HasCycle", a.toString())
+                    a
+                }
+
+            )
         }
+        Log.d("HasCycleCompos", userHasCycle.toString())
         Log.d("UID", uid.toString())
         var showCamera by remember {
             mutableStateOf(false)
@@ -108,58 +110,94 @@ class UnlockScreen {
                 Manifest.permission.ACCESS_COARSE_LOCATION,
             )
         )
-        UI(modifier, transactionRunning = transactionRunningLocal, onScanSuccess = { qr ->
-            showCamera = false
-            Log.d("UnlockBtn", "Starting new thread")
-            Firebase.firestore.collection("users").document(uid!!).get()
-                .addOnSuccessListener { snap ->
-                    if (snap.data?.get("HasCycle") != null) {
-                        userHasCycle = snap.data?.get("HasCycle")!! as Boolean
-                        CoroutineScope(Dispatchers.Main).launch {
-                            Log.d("QR Scanned", qr)
-                            Log.d("userHasCycle", userHasCycle.toString())
-
-                            if (userHasCycle) {
-                                returnSequence(
-                                    qr,
-                                    context,
-                                    { t -> transactionRunningLocal = t; transactionRunning = t })
-                            } else {
-                                unlockSequence(
-                                    qr,
-                                    context,
-                                    { t -> transactionRunningLocal = t; transactionRunning = t })
-                            }
-                            Firebase.firestore.collection("users").document(uid!!).get()
-                                .addOnSuccessListener { snap ->
-                                    if (snap.data?.get("HasCycle") != null) {
-                                        userHasCycle = snap.data?.get("HasCycle")!! as Boolean
-                                    }
-                                }
-                        }
-                        Firebase.firestore.collection("users").document(uid!!).get()
-                            .addOnSuccessListener { snap ->
-                                if (snap.data?.get("HasCycle") != null) {
-                                    userHasCycle = snap.data?.get("HasCycle")!! as Boolean
-                                }
-                            }
-                    }
+        var transactionRunningLocal by remember {
+            mutableStateOf(transactionRunning)
+        }
+        UI(
+            modifier, transactionRunning = transactionRunningLocal,
+            onScanSuccess = { qr ->
+                showCamera = false
+                if (transactionRunning > 0) {
+                    return@UI
                 }
-        }, showCamera = showCamera, permissionState = permissionStates, buttonClick = {
-            showCamera = true
-        }, buttonText = if (userHasCycle) "Return" else "Scan")
+                transactionRunning++
+                transactionRunningLocal = transactionRunning
+                userHasCycle = (Firebase.firestore.collection("users").document(uid!!).get()
+                    .await().data?.get("HasCycle") ?: true) as Boolean
+                CoroutineScope(Dispatchers.Main).launch {
+                    if (transactionRunning > 1) {
+                        return@launch
+                    }
+                    transactionRunning++
+                    transactionRunningLocal = transactionRunning
+                    if (userHasCycle == null) {
+                        return@launch
+                    }
+                    if (userHasCycle != false) {
+                        returnSequence(
+                            qr,
+                            context,
+                            { t ->
+                                if (t) transactionRunning++
+                                else transactionRunning--
+
+                                transactionRunningLocal = transactionRunning
+                                Firebase.firestore.collection("users").document(uid!!).get()
+                                    .addOnSuccessListener { snap ->
+                                        if (snap.data?.get("HasCycle") != null) {
+                                            userHasCycle = snap.data?.get("HasCycle")!! as Boolean
+                                        }
+                                    }
+                            })
+                    } else {
+                        unlockSequence(
+                            qr,
+                            context,
+                            { t ->
+                                if (t) transactionRunning++
+                                else transactionRunning--
+
+                                transactionRunningLocal = transactionRunning
+                                Firebase.firestore.collection("users").document(uid!!).get()
+                                    .addOnSuccessListener { snap ->
+                                        if (snap.data?.get("HasCycle") != null) {
+                                            userHasCycle = snap.data?.get("HasCycle")!! as Boolean
+                                        }
+                                    }
+                            }
+                        )
+                    }
+                    transactionRunning--
+                    transactionRunningLocal = transactionRunning
+                    Firebase.firestore.collection("users").document(uid!!).get()
+                        .addOnSuccessListener { snap ->
+                            if (snap.data?.get("HasCycle") != null) {
+                                userHasCycle = snap.data?.get("HasCycle")!! as Boolean
+                            }
+                        }
+                }
+                transactionRunning--
+                transactionRunningLocal = transactionRunning
+            },
+            showCamera = showCamera,
+            permissionState = permissionStates,
+            buttonClick = {
+                showCamera = true
+            },
+            buttonText = if (userHasCycle == true) "Return" else "Scan"
+        )
     }
 
     @Preview
     @Composable
     fun UI(
         modifier: Modifier = Modifier,
-        onScanSuccess: (String) -> Unit = {},
+        onScanSuccess: suspend (String) -> Unit = {},
         permissionState: MultiplePermissionsState = rememberMultiplePermissionsState(listOf()),
         showCamera: Boolean = false,
         buttonClick: () -> Unit = {},
         buttonText: String = "Scan",
-        transactionRunning: Boolean = true,
+        transactionRunning: Int = 0,
     ) {
 
         val lifecycleOwner = LocalLifecycleOwner.current
@@ -177,7 +215,7 @@ class UnlockScreen {
                 } else {
                     Image(painter = painterResource(id = R.drawable.unlock_image), "Unlock Image")
                     if (permissionState.allPermissionsGranted) {
-                        if (transactionRunning) {
+                        if (transactionRunning > 0) {
                             CircularProgressIndicator(
                                 modifier = Modifier.width(64.dp),
                             )
@@ -187,7 +225,7 @@ class UnlockScreen {
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(bottom = 20.dp)
                             )
-                            Button(enabled = !transactionRunning, onClick = {
+                            Button(onClick = {
                                 buttonClick()
                             }) {
                                 Text(buttonText)
@@ -228,13 +266,12 @@ class UnlockScreen {
         onTransactionChange: (Boolean) -> Unit
     ) {
         try {
-            if (transactionRunning) {
+            if (transactionRunning > 2) {
                 CoroutineScope(Dispatchers.Main).launch {
                     NavProvider.snackbarHostState.showSnackbar("Some process is already running")
                 }
                 return
             }
-            onTransactionChange(true)
             Log.d("qrCode", qrCode)
             val macHex = decodeHexFromStr(qrCode.trim())
             Log.d("QrSize", macHex.size.toString())
@@ -247,17 +284,20 @@ class UnlockScreen {
             CoroutineScope(Dispatchers.Main).launch {
                 NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
             }
+            onTransactionChange(true)
             Stand.connect(
                 mac, context, onError = { it ->
+                    Stand.disconnect()
                     onTransactionChange(false)
-                    runBlocking {
-                        CoroutineScope(Dispatchers.Main).launch {
-                            NavProvider.snackbarHostState.showSnackbar(it)
-                        }
+                    CoroutineScope(Dispatchers.Main).launch {
+                        NavProvider.snackbarHostState.showSnackbar(it)
                     }
                 }
             ) { socket ->
                 try {
+                    if (transactionRunning > 3) {
+                        return@connect
+                    }
                     CoroutineScope(Dispatchers.Main).launch {
                         NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
                     }
@@ -271,7 +311,17 @@ class UnlockScreen {
                         NavProvider.snackbarHostState.showSnackbar("Return Command completed")
                     }
                     print(resp)
-                    CloudFunctions.putToken(Stand.getToken(socket))
+                    CoroutineScope(Dispatchers.Main).launch {
+                        NavProvider.snackbarHostState.showSnackbar("Getting the token from Stand again")
+                    }
+                    val newToken = Stand.getToken(socket)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        NavProvider.snackbarHostState.showSnackbar("Sending the token back to the server")
+                    }
+                    CloudFunctions.putToken(newToken)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        NavProvider.snackbarHostState.showSnackbar("Token sent")
+                    }
                     Stand.disconnect()
                 } catch (e: Throwable) {
                     CoroutineScope(Dispatchers.Main).launch {
@@ -284,12 +334,10 @@ class UnlockScreen {
                 }
             }
         } catch (e: InvalidParameterException) {
-            onTransactionChange(false)
             CoroutineScope(Dispatchers.Main).launch {
                 NavProvider.snackbarHostState.showSnackbar("Invalid QR")
             }
         } catch (e: NumberFormatException) {
-            onTransactionChange(false)
             CoroutineScope(Dispatchers.Main).launch {
                 NavProvider.snackbarHostState.showSnackbar("Invalid QR")
 
@@ -298,7 +346,6 @@ class UnlockScreen {
             CoroutineScope(Dispatchers.Main).launch {
                 NavProvider.snackbarHostState.showSnackbar("Err: $e")
             }
-            onTransactionChange(false)
             Log.e("ReturnSeqOuter", e.toString())
         }
     }
@@ -310,13 +357,12 @@ class UnlockScreen {
         onTransactionChange: (Boolean) -> Unit
     ) {
         try {
-            if (transactionRunning) {
+            if (transactionRunning > 2) {
                 CoroutineScope(Dispatchers.Main).launch {
                     NavProvider.snackbarHostState.showSnackbar("Some process is already running")
                 }
                 return
             }
-            onTransactionChange(true)
             Log.d("qrCode", qrCode)
             val macHex = decodeHexFromStr(qrCode)
             Log.d("QrSize", macHex.size.toString())
@@ -329,18 +375,21 @@ class UnlockScreen {
             CoroutineScope(Dispatchers.Main).launch {
                 NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
             }
+            onTransactionChange(true)
             Stand.connect(
                 mac, context, onError = {
+                    Stand.disconnect()
                     onTransactionChange(false)
-                    runBlocking {
-                        CoroutineScope(Dispatchers.Main).launch {
-                            NavProvider.snackbarHostState.showSnackbar(it)
-                        }
+                    CoroutineScope(Dispatchers.Main).launch {
+                        NavProvider.snackbarHostState.showSnackbar(it)
                     }
                 }
 
             ) { socket ->
                 try {
+                    if (transactionRunning > 3) {
+                        return@connect
+                    }
                     CoroutineScope(Dispatchers.Main).launch {
                         NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
                     }
@@ -407,7 +456,6 @@ class UnlockScreen {
             CoroutineScope(Dispatchers.Main).launch {
                 NavProvider.snackbarHostState.showSnackbar("Err: $e")
             }
-            onTransactionChange(false)
             Log.e("UnlockSeq", e.toString())
         }
     }

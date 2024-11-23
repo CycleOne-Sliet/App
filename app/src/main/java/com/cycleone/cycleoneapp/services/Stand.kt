@@ -240,11 +240,6 @@ class Stand : Application() {
                     }
                 }
 
-                override fun onLost(network: Network) {
-                    super.onLost(network)
-                    onError("Connection Lost")
-                }
-
                 override fun onUnavailable() {
                     super.onUnavailable()
                     Log.e("Unavailable", "Network is not found")

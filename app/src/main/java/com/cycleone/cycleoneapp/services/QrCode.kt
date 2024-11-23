@@ -30,7 +30,7 @@ class QrCode : Application() {
         var qrScanned = 0
 
         @Composable
-        fun startCamera(onSuccess: (String) -> Unit, lifecycleOwner: LifecycleOwner) {
+        fun startCamera(onSuccess: suspend (String) -> Unit, lifecycleOwner: LifecycleOwner) {
             // AndroidView Necessary because Compose does not allow for streaming data from camera
             // and displaying it easily
             AndroidView(factory = { context ->
@@ -66,8 +66,8 @@ class QrCode : Application() {
                             Log.d("Scanned QR", it)
                             if (qrScanned == 0) {
                                 qrScanned++
-                                onSuccess(it)
                                 CoroutineScope(Dispatchers.Main).launch {
+                                    onSuccess(it)
                                     delay(1000L)
                                     qrScanned--
                                 }
