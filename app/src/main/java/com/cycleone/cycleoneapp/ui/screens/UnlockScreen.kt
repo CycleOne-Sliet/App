@@ -75,7 +75,7 @@ class UnlockScreen {
     ) {
 
         var transactionRunningLocal by remember {
-            mutableStateOf(false)
+            mutableStateOf(true)
         }
         var userHasCycle by remember {
             mutableStateOf(true)
@@ -111,13 +111,13 @@ class UnlockScreen {
         )
         val scope = rememberCoroutineScope()
         UI(modifier, transactionRunning = transactionRunningLocal, onScanSuccess = { qr ->
+            showCamera = false
             Log.d("UnlockBtn", "Starting new thread")
             Firebase.firestore.collection("users").document(uid!!).get()
                 .addOnSuccessListener { snap ->
                     if (snap.data?.get("HasCycle") != null) {
                         userHasCycle = snap.data?.get("HasCycle")!! as Boolean
                         scope.launch {
-                            showCamera = false
                             Log.d("QR Scanned", qr)
                             Log.d("userHasCycle", userHasCycle.toString())
 
@@ -226,7 +226,7 @@ class UnlockScreen {
         try {
             if (transactionRunning) {
                 CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar("Some process is already running")
+                    NavProvider.snackbarHostState.showSnackbar("Some process is already running")
                 }
                 return
             }
@@ -241,10 +241,10 @@ class UnlockScreen {
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
             CoroutineScope(Dispatchers.Main).launch {
-                    NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
+                NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
             }
             Stand.connect(
-                mac, context, onError = {it ->
+                mac, context, onError = { it ->
                     onTransactionChange(false)
                     runBlocking {
                         CoroutineScope(Dispatchers.Main).launch {
@@ -255,7 +255,7 @@ class UnlockScreen {
             ) { socket ->
                 try {
                     CoroutineScope(Dispatchers.Main).launch {
-                            NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
+                        NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
                     }
                     val token = CloudFunctions.token(Stand.getToken(socket))
                     val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@connect
@@ -264,14 +264,14 @@ class UnlockScreen {
                     Log.d("Stand", "Connecting")
                     val resp = Stand.returnCmd(socket, uid, token)
                     CoroutineScope(Dispatchers.Main).launch {
-                            NavProvider.snackbarHostState.showSnackbar("Return Command completed")
+                        NavProvider.snackbarHostState.showSnackbar("Return Command completed")
                     }
                     print(resp)
                     CloudFunctions.putToken(Stand.getToken(socket))
                     Stand.disconnect()
                 } catch (e: Throwable) {
                     CoroutineScope(Dispatchers.Main).launch {
-                            NavProvider.snackbarHostState.showSnackbar("Err: $e")
+                        NavProvider.snackbarHostState.showSnackbar("Err: $e")
                     }
                     Log.e("ReturnSeq", e.toString())
                     Log.e("ReturnSeq", e.stackTraceToString())
@@ -325,7 +325,8 @@ class UnlockScreen {
                 NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
             }
             Stand.connect(
-                mac, context, onError = { onTransactionChange(false)
+                mac, context, onError = {
+                    onTransactionChange(false)
                     runBlocking {
                         CoroutineScope(Dispatchers.Main).launch {
                             NavProvider.snackbarHostState.showSnackbar(it)

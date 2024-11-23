@@ -9,13 +9,14 @@ import androidx.camera.view.CameraController.COORDINATE_SYSTEM_VIEW_REFERENCED
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -32,7 +33,6 @@ class QrCode : Application() {
         fun startCamera(onSuccess: (String) -> Unit, lifecycleOwner: LifecycleOwner) {
             // AndroidView Necessary because Compose does not allow for streaming data from camera
             // and displaying it easily
-            val scope = rememberCoroutineScope()
             AndroidView(factory = { context ->
                 // Controls when the camera is being used
                 val cameraController = LifecycleCameraController(context)
@@ -54,11 +54,6 @@ class QrCode : Application() {
                     ) { result: MlKitAnalyzer.Result? ->
                         val barcodeResults = result?.getValue(barcodeScanner)
                         // Validating the results
-                        if (barcodeResults != null) {
-                            Log.i("QR Codes", barcodeResults.toList().toString())
-                        } else {
-                            Log.i("QR Code", "No results")
-                        }
                         if ((barcodeResults == null) ||
                             (barcodeResults.size == 0) ||
                             (barcodeResults.first() == null)
@@ -68,10 +63,11 @@ class QrCode : Application() {
                         // Parse to String and do the callback
                         val result = barcodeResults[0].rawValue
                         result?.let {
-                            if (qrScanned > 0) {
+                            Log.d("Scanned QR", it)
+                            if (qrScanned == 0) {
                                 qrScanned++
                                 onSuccess(it)
-                                scope.launch {
+                                CoroutineScope(Dispatchers.Main).launch {
                                     delay(1000L)
                                     qrScanned--
                                 }
