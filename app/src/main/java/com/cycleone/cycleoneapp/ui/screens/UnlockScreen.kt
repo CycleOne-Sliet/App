@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -109,7 +108,6 @@ class UnlockScreen {
                 Manifest.permission.ACCESS_COARSE_LOCATION,
             )
         )
-        val scope = rememberCoroutineScope()
         UI(modifier, transactionRunning = transactionRunningLocal, onScanSuccess = { qr ->
             showCamera = false
             Log.d("UnlockBtn", "Starting new thread")
@@ -117,7 +115,7 @@ class UnlockScreen {
                 .addOnSuccessListener { snap ->
                     if (snap.data?.get("HasCycle") != null) {
                         userHasCycle = snap.data?.get("HasCycle")!! as Boolean
-                        scope.launch {
+                        CoroutineScope(Dispatchers.Main).launch {
                             Log.d("QR Scanned", qr)
                             Log.d("userHasCycle", userHasCycle.toString())
 
@@ -132,6 +130,12 @@ class UnlockScreen {
                                     context,
                                     { t -> transactionRunningLocal = t; transactionRunning = t })
                             }
+                            Firebase.firestore.collection("users").document(uid!!).get()
+                                .addOnSuccessListener { snap ->
+                                    if (snap.data?.get("HasCycle") != null) {
+                                        userHasCycle = snap.data?.get("HasCycle")!! as Boolean
+                                    }
+                                }
                         }
                         Firebase.firestore.collection("users").document(uid!!).get()
                             .addOnSuccessListener { snap ->
@@ -280,10 +284,12 @@ class UnlockScreen {
                 }
             }
         } catch (e: InvalidParameterException) {
+            onTransactionChange(false)
             CoroutineScope(Dispatchers.Main).launch {
                 NavProvider.snackbarHostState.showSnackbar("Invalid QR")
             }
         } catch (e: NumberFormatException) {
+            onTransactionChange(false)
             CoroutineScope(Dispatchers.Main).launch {
                 NavProvider.snackbarHostState.showSnackbar("Invalid QR")
 
@@ -292,9 +298,8 @@ class UnlockScreen {
             CoroutineScope(Dispatchers.Main).launch {
                 NavProvider.snackbarHostState.showSnackbar("Err: $e")
             }
-            Log.e("ReturnSeqOuter", e.toString())
-        } finally {
             onTransactionChange(false)
+            Log.e("ReturnSeqOuter", e.toString())
         }
     }
 
@@ -402,9 +407,8 @@ class UnlockScreen {
             CoroutineScope(Dispatchers.Main).launch {
                 NavProvider.snackbarHostState.showSnackbar("Err: $e")
             }
-            Log.e("UnlockSeq", e.toString())
-        } finally {
             onTransactionChange(false)
+            Log.e("UnlockSeq", e.toString())
         }
     }
 }
