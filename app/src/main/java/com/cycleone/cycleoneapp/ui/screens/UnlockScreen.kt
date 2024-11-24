@@ -93,6 +93,14 @@ class UnlockScreen {
 
             )
         }
+        var userCycleId by remember {
+            mutableStateOf(runBlocking {
+                val a = (Firebase.firestore.collection("users").document(uid!!).get()
+                    .await().data?.get("CycleOccupied")) as String
+                Log.d("UserCycle", a)
+                a
+            })
+        }
         Log.d("HasCycleCompos", userHasCycle.toString())
         Log.d("UID", uid.toString())
         var showCamera by remember {
@@ -185,6 +193,7 @@ class UnlockScreen {
                 showCamera = true
             },
             userHasCycle = userHasCycle,
+            userCycleId = userCycleId,
         )
     }
 
@@ -198,6 +207,7 @@ class UnlockScreen {
         buttonClick: () -> Unit = {},
         transactionRunning: Int = 0,
         userHasCycle: Boolean? = null,
+        userCycleId: String? = null,
         user: FirebaseUser? = null
     ) {
         val lifecycleOwner = LocalLifecycleOwner.current
@@ -217,6 +227,7 @@ class UnlockScreen {
                     Text("Hi ${user?.displayName}")
                     if (userHasCycle == true) {
                         Text("You currently have a cycle allocated")
+                        Text("CycleId: $userCycleId")
                     }
 
                     if (userHasCycle == false) {
@@ -256,7 +267,6 @@ class UnlockScreen {
                             }
                             Text(textToShow)
                             Button(
-
                                 onClick = { permissionState.launchMultiplePermissionRequest() }) {
                                 Text("Request camera and wifi permissions")
                             }
