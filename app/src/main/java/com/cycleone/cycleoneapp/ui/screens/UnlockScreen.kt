@@ -96,8 +96,8 @@ class UnlockScreen {
         var userCycleId by remember {
             mutableStateOf(runBlocking {
                 val a = (Firebase.firestore.collection("users").document(uid!!).get()
-                    .await().data?.get("CycleOccupied")) as String
-                Log.d("UserCycle", a)
+                    .await().data?.get("CycleOccupied")) as String?
+                Log.d("UserCycle", a.toString())
                 a
             })
         }
