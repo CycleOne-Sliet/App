@@ -321,11 +321,7 @@ class UnlockScreen {
                     CoroutineScope(Dispatchers.Main).launch {
                         NavProvider.snackbarHostState.showSnackbar("Getting the token from Stand again")
                     }
-                    val newToken = Stand.getToken(socket)
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar("Sending the token back to the server")
-                    }
-                    CloudFunctions.putToken(newToken)
+                    CloudFunctions.putToken(resp)
                     CoroutineScope(Dispatchers.Main).launch {
                         NavProvider.snackbarHostState.showSnackbar("Token sent")
                     }
