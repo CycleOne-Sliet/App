@@ -234,12 +234,12 @@ class UnlockScreen {
                     Image(painter = painterResource(id = R.drawable.unlock_image), "Unlock Image")
                     Text("Hi ${user?.displayName}\n\n")
                     if (userHasCycle == true) {
-                        Text("You currently have a cycle allocated\n")
+                        Text("You currently have a cycle allocated\n\n")
                         Text("CycleId: $userCycleId")
                     }
 
                     if (userHasCycle != true) {
-                        Text("You currently don't have a cycle allocated")
+                        Text("You currently don't have a cycle allocated\n\n")
                     }
 
                     if (permissionState.allPermissionsGranted) {
