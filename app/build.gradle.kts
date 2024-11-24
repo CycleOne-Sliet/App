@@ -97,4 +97,12 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.22")
     implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("io.github.rizmaulana:compose-stacked-snackbar:1.0.4")
+}
+
+project.configurations.configureEach {
+    resolutionStrategy {
+        force("androidx.emoji2:emoji2-views-helper:1.3.0")
+        force("androidx.emoji2:emoji2:1.3.0")
+    }
 }

@@ -1,6 +1,6 @@
 package com.cycleone.cycleoneapp.services
 
-import androidx.compose.material3.SnackbarHostState
+import StackedSnakbarHostState
 import androidx.navigation.NavController
 
 // Uitility class to make managing navigation easier
@@ -8,6 +8,6 @@ import androidx.navigation.NavController
 class NavProvider {
     companion object {
         lateinit var controller: NavController
-        lateinit var snackbarHostState: SnackbarHostState
+        lateinit var snackbarHostState: StackedSnakbarHostState
     }
 }

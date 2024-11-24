@@ -82,11 +82,16 @@ class UnlockScreen {
             NavProvider.controller.navigate("/sign_in")
             return
         }
+        var user: FirebaseUser? by remember {
+            mutableStateOf(
+                FirebaseAuth.getInstance().currentUser
+            )
+        }
         var userHasCycle: Boolean? by remember {
             mutableStateOf(
                 runBlocking {
                     val a = (Firebase.firestore.collection("users").document(uid!!).get()
-                        .await().data?.get("HasCycle")) as Boolean
+                        .await().data?.get("HasCycle")) as Boolean?
                     Log.d("HasCycle", a.toString())
                     a
                 }
@@ -123,6 +128,7 @@ class UnlockScreen {
         }
         UI(
             modifier, transactionRunning = transactionRunningLocal,
+            user = user,
             onScanSuccess = { qr ->
                 showCamera = false
                 if (transactionRunning > 0) {
@@ -212,7 +218,9 @@ class UnlockScreen {
     ) {
         val lifecycleOwner = LocalLifecycleOwner.current
         Column(
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier
+                .fillMaxSize()
+                .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -224,9 +232,9 @@ class UnlockScreen {
                     QrCode.startCamera(lifecycleOwner = lifecycleOwner, onSuccess = onScanSuccess)
                 } else {
                     Image(painter = painterResource(id = R.drawable.unlock_image), "Unlock Image")
-                    Text("Hi ${user?.displayName}")
+                    Text("Hi ${user?.displayName}\n\n")
                     if (userHasCycle == true) {
-                        Text("You currently have a cycle allocated")
+                        Text("You currently have a cycle allocated\n")
                         Text("CycleId: $userCycleId")
                     }
 
@@ -286,7 +294,7 @@ class UnlockScreen {
         try {
             if (transactionRunning > 2) {
                 CoroutineScope(Dispatchers.Main).launch {
-                    NavProvider.snackbarHostState.showSnackbar("Some process is already running")
+                    NavProvider.snackbarHostState.showInfoSnackbar("Some process is already running")
                 }
                 return
             }
@@ -300,12 +308,12 @@ class UnlockScreen {
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
             CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
+                NavProvider.snackbarHostState.showInfoSnackbar("Mac Address: $mac")
             }
             Stand.connect(
                 mac, context, onError = { it ->
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar(it)
+                        NavProvider.snackbarHostState.showInfoSnackbar(it)
                     }
                 }
             ) { socket ->
@@ -315,7 +323,7 @@ class UnlockScreen {
                         return@connect
                     }
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
+                        NavProvider.snackbarHostState.showInfoSnackbar("WiFi Connection made")
                     }
                     val token = CloudFunctions.token(Stand.getToken(socket))
                     val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@connect
@@ -324,20 +332,20 @@ class UnlockScreen {
                     Log.d("Stand", "Connecting")
                     val resp = Stand.returnCmd(socket, uid, token)
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar("Return Command completed")
+                        NavProvider.snackbarHostState.showInfoSnackbar("Return Command completed")
                     }
                     print(resp)
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar("Getting the token from Stand again")
+                        NavProvider.snackbarHostState.showInfoSnackbar("Getting the token from Stand again")
                     }
                     CloudFunctions.putToken(resp)
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar("Token sent")
+                        NavProvider.snackbarHostState.showInfoSnackbar("Token sent")
                     }
                     Stand.disconnect()
                 } catch (e: Throwable) {
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar("Err: $e")
+                        NavProvider.snackbarHostState.showInfoSnackbar("Err: $e")
                     }
                     Log.e("ReturnSeq", e.toString())
                     Log.e("ReturnSeq", e.stackTraceToString())
@@ -347,16 +355,16 @@ class UnlockScreen {
             }
         } catch (e: InvalidParameterException) {
             CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showSnackbar("Invalid QR")
+                NavProvider.snackbarHostState.showErrorSnackbar("Invalid QR")
             }
         } catch (e: NumberFormatException) {
             CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showSnackbar("Invalid QR")
+                NavProvider.snackbarHostState.showErrorSnackbar("Invalid QR")
 
             }
         } catch (e: Throwable) {
             CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showSnackbar("Err: $e")
+                NavProvider.snackbarHostState.showErrorSnackbar("Err: $e")
             }
             Log.e("ReturnSeqOuter", e.toString())
         }
@@ -371,7 +379,7 @@ class UnlockScreen {
         try {
             if (transactionRunning > 2) {
                 CoroutineScope(Dispatchers.Main).launch {
-                    NavProvider.snackbarHostState.showSnackbar("Some process is already running")
+                    NavProvider.snackbarHostState.showInfoSnackbar("Some process is already running")
                 }
                 return
             }
@@ -385,12 +393,12 @@ class UnlockScreen {
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
             CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showSnackbar("Mac Address: $mac")
+                NavProvider.snackbarHostState.showInfoSnackbar("Mac Address: $mac")
             }
             Stand.connect(
                 mac, context, onError = {
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar(it)
+                        NavProvider.snackbarHostState.showInfoSnackbar(it)
                     }
                 }
 
@@ -401,17 +409,17 @@ class UnlockScreen {
                         return@connect
                     }
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
+                        NavProvider.snackbarHostState.showInfoSnackbar("WiFi Connection made")
                     }
                     Log.d("Stand", "Connecting")
                     val standToken = Stand.getToken(socket)
                     CloudFunctions.putToken(standToken)
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar("Data updated in server")
+                        NavProvider.snackbarHostState.showInfoSnackbar("Data updated in server")
                     }
                     CloudFunctions.token(standToken).let {
                         CoroutineScope(Dispatchers.Main).launch {
-                            NavProvider.snackbarHostState.showSnackbar("Unlock token received from backend")
+                            NavProvider.snackbarHostState.showInfoSnackbar("Unlock token received from backend")
                         }
                         FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
                             Log.d("Uid", it1)
@@ -420,14 +428,14 @@ class UnlockScreen {
                                 socket, it1, it
                             )
                             CoroutineScope(Dispatchers.Main).launch {
-                                NavProvider.snackbarHostState.showSnackbar("Stand Unlocked")
+                                NavProvider.snackbarHostState.showSuccessSnackbar("Stand Unlocked")
                             }
                             Log.d("StandResp", resp.toString())
                         }
                     }
                 } catch (e: Throwable) {
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar("Err: $e")
+                        NavProvider.snackbarHostState.showErrorSnackbar("Err: $e")
                     }
                     Log.e("UnlockSeq", e.toString())
                 } finally {
@@ -436,7 +444,7 @@ class UnlockScreen {
             }
         } catch (e: Throwable) {
             CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showSnackbar("Err: $e")
+                NavProvider.snackbarHostState.showErrorSnackbar("Err: $e")
             }
             Log.e("UnlockSeq", e.toString())
         }

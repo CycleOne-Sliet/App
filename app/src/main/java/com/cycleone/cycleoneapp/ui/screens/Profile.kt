@@ -12,16 +12,18 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -29,10 +31,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.cycleone.cycleoneapp.services.NavProvider
+import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 
 const val PICK_PDF_FILE = 2
 
@@ -56,9 +63,26 @@ class Profile {
                     }
                 }
             }
-        UI(modifier, user, onPhotoChangeRequest = {
+        var userHasCycle: Boolean? by remember {
+            mutableStateOf(
+                runBlocking {
+                    val a = (Firebase.firestore.collection("users").document(user?.uid!!).get()
+                        .await().data?.get("HasCycle")) as Boolean?
+                    Log.d("HasCycle", a.toString())
+                    a
+                }
+            )
+        }
+        var userCycleId by remember {
+            mutableStateOf(runBlocking {
+                val a = (Firebase.firestore.collection("users").document(user?.uid!!).get()
+                    .await().data?.get("CycleOccupied")) as String?
+                Log.d("UserCycle", a.toString())
+                a
+            })
+        }
+        UI(modifier, user, userHasCycle, userCycleId, onPhotoChangeRequest = {
             pickFileLauncher?.launch("*/*")
-
         }, onVerificationRequested = {
             user?.reload()
             user?.sendEmailVerification()
@@ -89,6 +113,8 @@ class Profile {
     fun UI(
         modifier: Modifier = Modifier,
         user: FirebaseUser? = null,
+        userHasCycle: Boolean? = null,
+        userCycleId: String? = null,
         onPhotoChangeRequest: () -> Unit = {},
         onVerificationRequested: () -> Unit = {}
     ) {
@@ -123,7 +149,6 @@ class Profile {
                     .fillMaxHeight(0.90F)
                     .background(
                         MaterialTheme.colorScheme.inversePrimary,
-                        RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp)
                     )
                     .padding(top = 50.dp, start = 10.dp, end = 10.dp),
             )
@@ -142,6 +167,17 @@ class Profile {
                     ) {
                         Text("Verify Email")
                     }
+                }
+                if (userHasCycle == true) {
+                    Text("You currently have a cycle with id: ${userCycleId}")
+                } else {
+                    Text("You currently have no cycle allocated")
+                }
+                Button(onClick = {
+                    FirebaseAuth.getInstance().signOut()
+                    NavProvider.snackbarHostState.showSuccessSnackbar("Signed Out")
+                }) {
+                    Text("Logout")
                 }
             }
         }
