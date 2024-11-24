@@ -238,7 +238,7 @@ class UnlockScreen {
                         Text("CycleId: $userCycleId")
                     }
 
-                    if (userHasCycle == false) {
+                    if (userHasCycle != true) {
                         Text("You currently don't have a cycle allocated")
                     }
 
@@ -259,7 +259,7 @@ class UnlockScreen {
                                 if (userHasCycle == true) {
                                     Text("Scan to return cycle")
                                 }
-                                if (userHasCycle == false) {
+                                if (userHasCycle != true) {
                                     Text("Scan to unlock cycle")
                                 }
                                 Icon(Icons.Default.Search, "QR")
