@@ -265,9 +265,7 @@ class Stand : Application() {
                         ).show()
                     }
                 }
-
             }
-
             // Request android to provide the network as configured
             connectivityManager.requestNetwork(
                 networkRequest,

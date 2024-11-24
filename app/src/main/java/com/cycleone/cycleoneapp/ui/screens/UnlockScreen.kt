@@ -42,6 +42,7 @@ import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.CoroutineScope
@@ -184,7 +185,7 @@ class UnlockScreen {
             buttonClick = {
                 showCamera = true
             },
-            buttonText = if (userHasCycle == true) "Return" else "Scan"
+            userHasCycle = userHasCycle,
         )
     }
 
@@ -196,8 +197,9 @@ class UnlockScreen {
         permissionState: MultiplePermissionsState = rememberMultiplePermissionsState(listOf()),
         showCamera: Boolean = false,
         buttonClick: () -> Unit = {},
-        buttonText: String = "Scan",
         transactionRunning: Int = 0,
+        userHasCycle: Boolean? = null,
+        user: FirebaseUser? = null
     ) {
 
         val lifecycleOwner = LocalLifecycleOwner.current
@@ -214,6 +216,15 @@ class UnlockScreen {
                     QrCode.startCamera(lifecycleOwner = lifecycleOwner, onSuccess = onScanSuccess)
                 } else {
                     Image(painter = painterResource(id = R.drawable.unlock_image), "Unlock Image")
+                    Text("Hi ${user?.displayName}")
+                    if (userHasCycle == true) {
+                        Text("You currently have a cycle allocated")
+                    }
+
+                    if (userHasCycle == false) {
+                        Text("You currently don't have a cycle allocated")
+                    }
+
                     if (permissionState.allPermissionsGranted) {
                         if (transactionRunning > 0) {
                             CircularProgressIndicator(
@@ -228,20 +239,20 @@ class UnlockScreen {
                             Button(onClick = {
                                 buttonClick()
                             }) {
-                                Text(buttonText)
+                                if (userHasCycle == true) {
+                                    Text("Scan to return cycle")
+                                }
+                                if (userHasCycle == false) {
+                                    Text("Scan to unlock cycle")
+                                }
                                 Icon(Icons.Default.Search, "QR")
                             }
                         }
                     } else {
                         Column {
                             val textToShow = if (permissionState.shouldShowRationale) {
-                                // If the user has denied the permission but the rationale can be shown,
-                                // then gently explain why the app requires this permission
                                 "The camera permission is required to scan the stand's QR, and the wifi permissions are required to connect to the stand"
                             } else {
-                                // If it's the first time the user lands on this feature, or the user
-                                // doesn't want to be asked again for this permission, explain that the
-                                // permission is required
                                 "Without these permission, the app cannot function" +
                                         "Please grant the permissions\n" + "These permissions will only be used while scanning the QR"
                             }
@@ -257,7 +268,6 @@ class UnlockScreen {
             }
         }
     }
-
 
     @OptIn(ExperimentalStdlibApi::class)
     suspend fun returnSequence(
