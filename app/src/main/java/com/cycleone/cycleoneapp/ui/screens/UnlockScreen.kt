@@ -201,7 +201,6 @@ class UnlockScreen {
         userHasCycle: Boolean? = null,
         user: FirebaseUser? = null
     ) {
-
         val lifecycleOwner = LocalLifecycleOwner.current
         Column(
             modifier = modifier.fillMaxSize(),
