@@ -35,7 +35,6 @@ import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.CloudFunctions
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.services.QrCode
-import com.cycleone.cycleoneapp.services.Response
 import com.cycleone.cycleoneapp.services.Stand
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
@@ -395,54 +394,26 @@ class UnlockScreen {
                         NavProvider.snackbarHostState.showSnackbar("WiFi Connection made")
                     }
                     Log.d("Stand", "Connecting")
-                    var resp = Stand.getStatus(socket)
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showSnackbar("Stand Status: ${resp}")
-                    }
                     val standToken = Stand.getToken(socket)
-                    print(resp)
-                    if (resp == null) {
-                        return@connect
+                    CloudFunctions.putToken(standToken)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        NavProvider.snackbarHostState.showSnackbar("Data updated in server")
                     }
-                    when (resp) {
-                        is Response.Ok -> {
-                            if (resp.cycleId == null) {
-                                CloudFunctions.putToken(standToken)
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    NavProvider.snackbarHostState.showSnackbar("Data updated in server")
-                                }
-                            }
-                            val cycleId = resp.cycleId
-                            Log.d(
-                                "CycleId Before Function Call", cycleId.toString()
-                            )
-                            CloudFunctions.token(standToken).let {
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    NavProvider.snackbarHostState.showSnackbar("Unlock token received from backend")
-                                }
-                                FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
-                                    Log.d("Uid", it1)
-                                    Log.d("serverResp", it.toHexString())
-                                    resp = Stand.unlock(
-                                        socket, it1, it
-                                    )
-                                    CoroutineScope(Dispatchers.Main).launch {
-                                        NavProvider.snackbarHostState.showSnackbar("Stand Unlocked")
-                                    }
-                                    Log.d("StandResp", resp.toString())
-                                }
-                            }
+                    CloudFunctions.token(standToken).let {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            NavProvider.snackbarHostState.showSnackbar("Unlock token received from backend")
                         }
-
-                        is Response.Err -> {
+                        FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
+                            Log.d("Uid", it1)
+                            Log.d("serverResp", it.toHexString())
+                            val resp = Stand.unlock(
+                                socket, it1, it
+                            )
                             CoroutineScope(Dispatchers.Main).launch {
-                                NavProvider.snackbarHostState.showSnackbar("Err: ${resp.toString()}")
+                                NavProvider.snackbarHostState.showSnackbar("Stand Unlocked")
                             }
-                            Log.e(
-                                "StandError", resp.toString()
-                            )
+                            Log.d("StandResp", resp.toString())
                         }
-
                     }
                 } catch (e: Throwable) {
                     CoroutineScope(Dispatchers.Main).launch {
