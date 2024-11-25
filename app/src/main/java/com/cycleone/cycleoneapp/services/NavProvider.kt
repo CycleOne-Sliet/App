@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +23,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 // Uitility class to make managing navigation easier
 // Allows for getting the NavController without having to pass it in
@@ -78,9 +85,24 @@ class NavProvider {
             }
         }
 
+        @Composable
+        fun debugButton() {
+            if (logs.size > 0) {
+                Button(onClick = {
+                    showDebugModal()
+                }) {
+                    Icons.Default.Build
+                }
+            }
+        }
+
         fun showDebugModal() {
             logs = listOf()
             updateDebugModalView(true)
+            CoroutineScope(Dispatchers.Main).launch {
+                delay(5000L)
+                hideDebugModal()
+            }
         }
 
         fun addLogEntry(entry: String) {

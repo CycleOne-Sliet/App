@@ -152,6 +152,7 @@ fun MainScaffold(
 ) {
     Scaffold(
         snackbarHost = { NavProvider.debugModal() },
+        floatingActionButton = { NavProvider.debugButton() },
         topBar = {
             if (showTopBar) {
                 TextButton(
