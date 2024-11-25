@@ -19,6 +19,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
@@ -70,56 +74,70 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
     } else {
         "/home"
     }
-    NavHost(
+    var showTopBar by remember {
+        mutableStateOf(false)
+    }
+
+    var showBottomBar by remember {
+        mutableStateOf(false)
+    }
+
+    MainScaffold(
         navController = navController,
-        startDestination = currentLocation,
-    ) {
-        composable("/landing") {
-            MainScaffold(navController = navController, showTopBar = false, showBottomBar = false) {
-                Landing().Create(it)
-            }
-        }
-        composable("/home", deepLinks = listOf(navDeepLink { uriPattern = "$uri/home" })) {
-            MainScaffold(navController = navController, showTopBar = false, showBottomBar = true) {
-                Home().Create(it)
-            }
-        }
-        composable("/profile") {
-            MainScaffold(navController = navController, showTopBar = true, showBottomBar = true) {
-                Profile().Create(it)
-            }
-        }
-        composable(
-            "/sign_in",
-            deepLinks = listOf(navDeepLink { uriPattern = "$uri/sign_in" })
+        showTopBar = showTopBar,
+        showBottomBar = showBottomBar
+    ) { modifier ->
+        NavHost(
+            navController = navController,
+            startDestination = currentLocation,
         ) {
-            MainScaffold(navController = navController, showTopBar = false, showBottomBar = false) {
-                SignIn().Create(it)
+            composable("/landing") {
+                showTopBar = false
+                showBottomBar = false
+                Landing().Create(modifier)
             }
-        }
-        composable("/sign_up") {
-            MainScaffold(navController = navController, showTopBar = false, showBottomBar = false) {
-                SignUp().Create(it)
+            composable("/home", deepLinks = listOf(navDeepLink { uriPattern = "$uri/home" })) {
+                showTopBar = false
+                showBottomBar = true
+                Home().Create(modifier)
             }
-        }
-        composable("/forgot_otp") {
-            MainScaffold(navController = navController, showTopBar = true, showBottomBar = true) {
-                OtpScreen().Create(it)
+            composable("/profile") {
+                showTopBar = true
+                showBottomBar = true
+                Profile().Create(modifier)
             }
-        }
-        composable("/unlock_screen") {
-            MainScaffold(navController = navController, showTopBar = true, showBottomBar = true) {
-                UnlockScreen().Create(it)
+            composable(
+                "/sign_in",
+                deepLinks = listOf(navDeepLink { uriPattern = "$uri/sign_in" })
+            ) {
+                showTopBar = false
+                showBottomBar = false
+                SignIn().Create(modifier)
             }
-        }
-        composable("/forgot_password") {
-            MainScaffold(navController = navController, showTopBar = true, showBottomBar = false) {
-                ForgotPassword().Create(it)
+            composable("/sign_up") {
+                showTopBar = false
+                showBottomBar = false
+                SignUp().Create(modifier)
             }
-        }
-        composable("/allLocations") {
-            MainScaffold(navController = navController, showTopBar = true, showBottomBar = true) {
-                AllLocations().Create(it)
+            composable("/forgot_otp") {
+                showTopBar = true
+                showBottomBar = true
+                OtpScreen().Create(modifier)
+            }
+            composable("/unlock_screen") {
+                showTopBar = true
+                showBottomBar = true
+                UnlockScreen().Create(modifier)
+            }
+            composable("/forgot_password") {
+                showTopBar = true
+                showBottomBar = false
+                ForgotPassword().Create(modifier)
+            }
+            composable("/allLocations") {
+                showTopBar = true
+                showBottomBar = true
+                AllLocations().Create(modifier)
             }
         }
     }
@@ -132,8 +150,6 @@ fun MainScaffold(
     showBottomBar: Boolean,
     content: @Composable (Modifier) -> Unit
 ) {
-
-
     Scaffold(
         snackbarHost = { NavProvider.debugModal() },
         topBar = {

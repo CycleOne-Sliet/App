@@ -52,8 +52,12 @@ class NavProvider {
                 Dialog(onDismissRequest = { hideDebugModal() }, properties = DialogProperties()) {
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxWidth(0.8F)
                             .scrollable(scrollState, Orientation.Vertical)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(10.dp)
+                            )
                     ) {
                         for (v in logsList) {
                             Text(
