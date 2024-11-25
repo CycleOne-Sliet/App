@@ -43,6 +43,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -100,8 +101,8 @@ class UnlockScreen {
         }
         var userCycleId by remember {
             mutableStateOf(runBlocking {
-                val a = (Firebase.firestore.collection("users").document(uid!!).get()
-                    .await().data?.get("CycleOccupied")) as String?
+                val a = ((Firebase.firestore.collection("users").document(uid!!).get()
+                    .await().data?.get("CycleOccupied")) as DocumentReference?)?.id
                 Log.d("UserCycle", a.toString())
                 a
             })
@@ -147,40 +148,21 @@ class UnlockScreen {
                     if (userHasCycle == null) {
                         return@launch
                     }
-                    if (userHasCycle != false) {
-                        returnSequence(
-                            qr,
-                            context,
-                            { t ->
-                                if (t) transactionRunning++
-                                else transactionRunning--
+                    triggerStandSeq(
+                        qr,
+                        context,
+                        { t ->
+                            if (t) transactionRunning++
+                            else transactionRunning--
 
-                                transactionRunningLocal = transactionRunning
-                                Firebase.firestore.collection("users").document(uid!!).get()
-                                    .addOnSuccessListener { snap ->
-                                        if (snap.data?.get("HasCycle") != null) {
-                                            userHasCycle = snap.data?.get("HasCycle")!! as Boolean
-                                        }
+                            transactionRunningLocal = transactionRunning
+                            Firebase.firestore.collection("users").document(uid!!).get()
+                                .addOnSuccessListener { snap ->
+                                    if (snap.data?.get("HasCycle") != null) {
+                                        userHasCycle = snap.data?.get("HasCycle")!! as Boolean
                                     }
-                            })
-                    } else {
-                        unlockSequence(
-                            qr,
-                            context,
-                            { t ->
-                                if (t) transactionRunning++
-                                else transactionRunning--
-
-                                transactionRunningLocal = transactionRunning
-                                Firebase.firestore.collection("users").document(uid!!).get()
-                                    .addOnSuccessListener { snap ->
-                                        if (snap.data?.get("HasCycle") != null) {
-                                            userHasCycle = snap.data?.get("HasCycle")!! as Boolean
-                                        }
-                                    }
-                            }
-                        )
-                    }
+                                }
+                        })
                     transactionRunning--
                     transactionRunningLocal = transactionRunning
                     Firebase.firestore.collection("users").document(uid!!).get()
@@ -285,8 +267,7 @@ class UnlockScreen {
         }
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
-    suspend fun returnSequence(
+    suspend fun triggerStandSeq(
         qrCode: String,
         context: Context,
         onTransactionChange: (Boolean) -> Unit
@@ -298,9 +279,7 @@ class UnlockScreen {
                 }
                 return
             }
-            Log.d("qrCode", qrCode)
             val macHex = decodeHexFromStr(qrCode.trim())
-            Log.d("QrSize", macHex.size.toString())
             if (macHex.size != 6) {
                 Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
                 return
@@ -325,22 +304,14 @@ class UnlockScreen {
                     CoroutineScope(Dispatchers.Main).launch {
                         NavProvider.snackbarHostState.showInfoSnackbar("WiFi Connection made")
                     }
-                    val token = CloudFunctions.token(Stand.getToken(socket))
-                    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@connect
-                    Log.d("Uid", uid)
-                    Log.d("serverResp", token.toHexString())
-                    Log.d("Stand", "Connecting")
-                    val resp = Stand.returnCmd(socket, uid, token)
+                    CloudFunctions.putToken(
+                        Stand.trigger(
+                            socket,
+                            CloudFunctions.token(Stand.getToken(socket))
+                        )
+                    )
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar("Return Command completed")
-                    }
-                    print(resp)
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar("Getting the token from Stand again")
-                    }
-                    CloudFunctions.putToken(resp)
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar("Token sent")
+                        NavProvider.snackbarHostState.showInfoSnackbar("Done")
                     }
                     Stand.disconnect()
                 } catch (e: Throwable) {
@@ -370,83 +341,4 @@ class UnlockScreen {
         }
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
-    suspend fun unlockSequence(
-        qrCode: String,
-        context: Context,
-        onTransactionChange: (Boolean) -> Unit
-    ) {
-        try {
-            if (transactionRunning > 2) {
-                CoroutineScope(Dispatchers.Main).launch {
-                    NavProvider.snackbarHostState.showInfoSnackbar("Some process is already running")
-                }
-                return
-            }
-            Log.d("qrCode", qrCode)
-            val macHex = decodeHexFromStr(qrCode)
-            Log.d("QrSize", macHex.size.toString())
-            if (macHex.size != 6) {
-                Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
-                return
-            }
-            val mac: MacAddress = MacAddress.fromBytes(macHex)
-            print(mac)
-            CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showInfoSnackbar("Mac Address: $mac")
-            }
-            Stand.connect(
-                mac, context, onError = {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar(it)
-                    }
-                }
-
-            ) { socket ->
-                onTransactionChange(true)
-                try {
-                    if (transactionRunning > 3) {
-                        return@connect
-                    }
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar("WiFi Connection made")
-                    }
-                    Log.d("Stand", "Connecting")
-                    val standToken = Stand.getToken(socket)
-                    CloudFunctions.putToken(standToken)
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar("Data updated in server")
-                    }
-                    CloudFunctions.token(standToken).let {
-                        CoroutineScope(Dispatchers.Main).launch {
-                            NavProvider.snackbarHostState.showInfoSnackbar("Unlock token received from backend")
-                        }
-                        FirebaseAuth.getInstance().currentUser?.uid?.let { it1 ->
-                            Log.d("Uid", it1)
-                            Log.d("serverResp", it.toHexString())
-                            val resp = Stand.unlock(
-                                socket, it1, it
-                            )
-                            CoroutineScope(Dispatchers.Main).launch {
-                                NavProvider.snackbarHostState.showSuccessSnackbar("Stand Unlocked")
-                            }
-                            Log.d("StandResp", resp.toString())
-                        }
-                    }
-                } catch (e: Throwable) {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showErrorSnackbar("Err: $e")
-                    }
-                    Log.e("UnlockSeq", e.toString())
-                } finally {
-                    onTransactionChange(false)
-                }
-            }
-        } catch (e: Throwable) {
-            CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showErrorSnackbar("Err: $e")
-            }
-            Log.e("UnlockSeq", e.toString())
-        }
-    }
 }

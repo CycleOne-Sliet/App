@@ -28,7 +28,6 @@ import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URI
-import java.nio.charset.Charset
 
 
 // Class representing the various commands that can be sent to the Stand
@@ -155,7 +154,7 @@ class Stand : Application() {
                 network.openConnection(
                     URI.create("http://10.10.10.10/").toURL()
                 ) as HttpURLConnection
-            httpURLConnection.requestMethod = "PUT"
+            httpURLConnection.requestMethod = "GET"
             httpURLConnection.connect()
             // Check for any errors
             var inputStream = httpURLConnection.errorStream
@@ -166,36 +165,8 @@ class Stand : Application() {
             return inputStream.readBytes()
         }
 
-        // Get the stand's status
-        // Must be called after Connect has been called in app
-        fun getStatus(network: Network): Response? {
-            // Establish an Http Connection
-            val httpURLConnection =
-                network.openConnection(
-                    URI.create("http://10.10.10.10/").toURL()
-                ) as HttpURLConnection
-            httpURLConnection.connect()
-            // Check for any errors
-            var inputStream = httpURLConnection.errorStream
-            if (inputStream == null) {
-                inputStream = httpURLConnection.inputStream
-            }
-            // Read the body
-            val resp = inputStream.readBytes().toString(Charset.defaultCharset())
-
-            Log.d("StatusResp", resp)
-            return try {
-                // Try parsing the body into StandResponse
-                parser.fromJson(resp)
-            } catch (err: Throwable) {
-                // Something unrecognizable was encountered
-                Log.d("Parsing Resp", "Message: ${err.message}\nStacktrace: ${err.stackTrace}")
-                null
-            }
-        }
 
         // Connects to the stand over the mac address
-
         suspend fun connect(
             mac: MacAddress,
             context: Context,
@@ -272,18 +243,17 @@ class Stand : Application() {
             )
         }
 
-        suspend fun returnCmd(
+        suspend fun trigger(
             network: Network,
-            uid: String,
             serverRespToken: ByteArray
         ): ByteArray {
             NavProvider.snackbarHostState.showInfoSnackbar(
-                "Sending Return command",
+                "Sending trigger command",
             )
             // Establish the connection
             val httpURLConnection =
                 network.openConnection(
-                    URI.create("http://10.10.10.10/return").toURL()
+                    URI.create("http://10.10.10.10").toURL()
                 ) as HttpURLConnection
             // Set the http request method to POST
             httpURLConnection.doOutput = true
@@ -294,12 +264,12 @@ class Stand : Application() {
             httpURLConnection.setRequestProperty("Content-Type", "application/octet-stream")
             // Send the Unlock Command's Data
             Log.d("ServerRespLen", serverRespToken.size.toString())
-            httpURLConnection.outputStream.write(Command.Unlock(uid, serverRespToken).getData())
+            httpURLConnection.outputStream.write(serverRespToken)
             httpURLConnection.outputStream.flush()
             // Perform the request
             httpURLConnection.connect()
             NavProvider.snackbarHostState.showInfoSnackbar(
-                "Return Command sent",
+                "Trigger Command sent",
             )
             // Check for any errors
             var inputStream = httpURLConnection.errorStream
@@ -314,58 +284,9 @@ class Stand : Application() {
             // Read the response
             return inputStream.readBytes()
         }
-
-        // Used for sending the unlock request to the stand
-        suspend fun unlock(network: Network, uid: String, serverRespToken: ByteArray): Response? {
-
-            NavProvider.snackbarHostState.showInfoSnackbar(
-                "Sending Unlock command",
-            )
-            // Establish the connection
-            val httpURLConnection =
-                network.openConnection(
-                    URI.create("http://10.10.10.10/").toURL()
-                ) as HttpURLConnection
-            // Set the http request method to POST
-            httpURLConnection.doOutput = true
-            httpURLConnection.requestMethod = "POST"
-            // Set the content type to octet stream, to be able to send binary data
-            httpURLConnection.setRequestProperty("Content-Type", "application/octet-stream")
-            // Send the Unlock Command's Data
-            Log.d("ServerRespLen", serverRespToken.size.toString())
-            httpURLConnection.outputStream.write(Command.Unlock(uid, serverRespToken).getData())
-            httpURLConnection.outputStream.flush()
-            // Perform the request
-            httpURLConnection.connect()
-            NavProvider.snackbarHostState.showInfoSnackbar(
-                "Unlock command sent",
-            )
-            // Check for any errors
-            var inputStream = httpURLConnection.errorStream
-            if (inputStream == null) {
-                inputStream = httpURLConnection.inputStream
-            }
-            Log.d("Unlock RespCode", "${httpURLConnection.responseCode}")
-            Log.d("Unlock RespMsg", httpURLConnection.responseMessage)
-            // Read the response
-            NavProvider.snackbarHostState.showInfoSnackbar(
-                "Stand response code: ${httpURLConnection.responseCode}",
-            )
-            val resp = inputStream.readBytes().toString(Charset.defaultCharset())
-            Log.d("Unlock Resp", resp)
-            return try {
-                // Parse it to StandResponse
-                parser.fromJson(resp)
-            } catch (err: Throwable) {
-                Log.e("Parsing response", "${err.message}\n${err.stackTrace.asList()}")
-                null
-            }
-        }
     }
 
 }
-
-data class Cycle(val tag: String, val isUnlocked: Boolean)
 
 // Used to get the Stand Locations stored in the backend
 suspend fun getStandLocations(): List<StandLocation> {
