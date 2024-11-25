@@ -67,6 +67,7 @@ class QrCode : Application() {
                             if (qrScanned == 0) {
                                 qrScanned++
                                 CoroutineScope(Dispatchers.Main).launch {
+                                    NavProvider.showDebugModal()
                                     onSuccess(it)
                                     delay(1000L)
                                     qrScanned--

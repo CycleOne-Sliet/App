@@ -1,6 +1,5 @@
 package com.cycleone.cycleoneapp
 
-import StackedSnackbarHost
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -41,7 +40,6 @@ import com.cycleone.cycleoneapp.ui.screens.SignUp
 import com.cycleone.cycleoneapp.ui.screens.UnlockScreen
 import com.cycleone.cycleoneapp.ui.theme.CycleoneAppTheme
 import com.google.firebase.auth.FirebaseAuth
-import rememberStackedSnackbarHostState
 
 
 val uri = "cycleone://cycleone.base"
@@ -136,9 +134,8 @@ fun MainScaffold(
 ) {
 
 
-    NavProvider.snackbarHostState = rememberStackedSnackbarHostState()
     Scaffold(
-        snackbarHost = { StackedSnackbarHost(NavProvider.snackbarHostState) },
+        snackbarHost = { NavProvider.debugModal() },
         topBar = {
             if (showTopBar) {
                 TextButton(

@@ -175,7 +175,7 @@ class Profile {
                 }
                 Button(onClick = {
                     FirebaseAuth.getInstance().signOut()
-                    NavProvider.snackbarHostState.showSuccessSnackbar("Signed Out")
+                    NavProvider.addLogEntry("Signed Out")
                 }) {
                     Text("Logout")
                 }

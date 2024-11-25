@@ -49,7 +49,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
-import java.nio.charset.Charset
 import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
@@ -275,7 +274,7 @@ class UnlockScreen {
         try {
             if (transactionRunning > 2) {
                 CoroutineScope(Dispatchers.Main).launch {
-                    NavProvider.snackbarHostState.showInfoSnackbar("Some process is already running")
+                    NavProvider.addLogEntry("Some process is already running")
                 }
                 return
             }
@@ -287,12 +286,12 @@ class UnlockScreen {
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
             CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showInfoSnackbar("Mac Address: $mac")
+                NavProvider.addLogEntry("Mac Address: $mac")
             }
             Stand.connect(
                 mac, context, onError = { it ->
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar(it)
+                        NavProvider.addLogEntry(it)
                     }
                 }
             ) { socket ->
@@ -302,18 +301,14 @@ class UnlockScreen {
                         return@connect
                     }
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar("WiFi Connection made")
+                        NavProvider.addLogEntry("WiFi Connection made")
                     }
                     val standStatusToken = Stand.getToken(socket)
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar(
-                            "StandStatusToken Received: ${
-                                standStatusToken.toString(
-                                    Charset.defaultCharset()
-                                )
-                            }"
+                        NavProvider.addLogEntry(
+                            "StandStatusToken Received"
                         )
-                        NavProvider.snackbarHostState.showInfoSnackbar(
+                        NavProvider.addLogEntry(
                             "StandStatusToken Len: ${
                                 standStatusToken.size
                             }"
@@ -321,14 +316,10 @@ class UnlockScreen {
                     }
                     val cloudToken = CloudFunctions.token(standStatusToken)
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar(
-                            "Cloud Function Token Received: ${
-                                standStatusToken.toString(
-                                    Charset.defaultCharset()
-                                )
-                            }"
+                        NavProvider.addLogEntry(
+                            "Cloud Function Token Received"
                         )
-                        NavProvider.snackbarHostState.showInfoSnackbar(
+                        NavProvider.addLogEntry(
                             "Cloud Function Token Len: ${
                                 standStatusToken.size
                             }"
@@ -336,14 +327,10 @@ class UnlockScreen {
                     }
                     val standToken = Stand.trigger(socket, cloudToken)
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar(
-                            "Stand Triggered: ${
-                                standToken.toString(
-                                    Charset.defaultCharset()
-                                )
-                            }"
+                        NavProvider.addLogEntry(
+                            "Stand Triggered"
                         )
-                        NavProvider.snackbarHostState.showInfoSnackbar(
+                        NavProvider.addLogEntry(
                             "Stand Token Size: ${
                                 standToken.size
                             }"
@@ -351,12 +338,12 @@ class UnlockScreen {
                     }
                     CloudFunctions.putToken(standToken)
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar("Done")
+                        NavProvider.addLogEntry("Done")
                     }
                     Stand.disconnect()
                 } catch (e: Throwable) {
                     CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.snackbarHostState.showInfoSnackbar("Err: $e")
+                        NavProvider.addLogEntry("Err: $e")
                     }
                     Log.e("ReturnSeq", e.toString())
                     Log.e("ReturnSeq", e.stackTraceToString())
@@ -366,16 +353,16 @@ class UnlockScreen {
             }
         } catch (e: InvalidParameterException) {
             CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showErrorSnackbar("Invalid QR")
+                NavProvider.addLogEntry("Invalid QR")
             }
         } catch (e: NumberFormatException) {
             CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showErrorSnackbar("Invalid QR")
+                NavProvider.addLogEntry("Invalid QR")
 
             }
         } catch (e: Throwable) {
             CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.snackbarHostState.showErrorSnackbar("Err: $e")
+                NavProvider.addLogEntry("Err: $e")
             }
             Log.e("ReturnSeqOuter", e.toString())
         }

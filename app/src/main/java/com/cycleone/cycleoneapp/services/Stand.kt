@@ -144,7 +144,7 @@ class Stand : Application() {
         fun disconnect() {
             connectivityManager.unregisterNetworkCallback(networkCallback)
             runBlocking {
-                NavProvider.snackbarHostState.showInfoSnackbar(
+                NavProvider.addLogEntry(
                     "Stand Disconnect Request sent",
                 )
             }
@@ -254,7 +254,7 @@ class Stand : Application() {
             network: Network,
             serverRespToken: ByteArray
         ): ByteArray {
-            NavProvider.snackbarHostState.showInfoSnackbar(
+            NavProvider.addLogEntry(
                 "Sending trigger command",
             )
             // Establish the connection
@@ -275,7 +275,7 @@ class Stand : Application() {
             httpURLConnection.outputStream.flush()
             // Perform the request
             httpURLConnection.connect()
-            NavProvider.snackbarHostState.showInfoSnackbar(
+            NavProvider.addLogEntry(
                 "Trigger Command sent",
             )
             // Check for any errors
@@ -285,7 +285,7 @@ class Stand : Application() {
             }
             Log.d("Unlock RespCode", "${httpURLConnection.responseCode}")
             Log.d("Unlock RespMsg", httpURLConnection.responseMessage)
-            NavProvider.snackbarHostState.showInfoSnackbar(
+            NavProvider.addLogEntry(
                 "Stand Response code: ${httpURLConnection.responseCode}",
             )
             // Read the response
