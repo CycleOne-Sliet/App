@@ -132,6 +132,8 @@ class Stand : Application() {
         lateinit var connectivityManager: ConnectivityManager
         lateinit var networkCallback: NetworkCallback
 
+        @Volatile
+        var IsConnected = false
         val parser = Moshi.Builder().add(ResponseAdapter())
             .add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
             .adapter<Response>()
@@ -205,9 +207,14 @@ class Stand : Application() {
                 // When network becomes available, call the onConnect function, and then disconnect
                 override fun onAvailable(network: Network) {
                     super.onAvailable(network)
+                    if (IsConnected) {
+                        return
+                    }
+                    IsConnected = true
                     runBlocking {
                         onConnect(network)
                     }
+                    IsConnected = false
                 }
 
                 override fun onUnavailable() {

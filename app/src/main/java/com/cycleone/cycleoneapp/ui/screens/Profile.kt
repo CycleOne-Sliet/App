@@ -76,7 +76,7 @@ class Profile {
         var userCycleId by remember {
             mutableStateOf(runBlocking {
                 val a = (Firebase.firestore.collection("users").document(user?.uid!!).get()
-                    .await().data?.get("CycleOccupied")) as String?
+                    .await().data?.get("CycleOccupied")) as Long?
                 Log.d("UserCycle", a.toString())
                 a
             })
@@ -114,7 +114,7 @@ class Profile {
         modifier: Modifier = Modifier,
         user: FirebaseUser? = null,
         userHasCycle: Boolean? = null,
-        userCycleId: String? = null,
+        userCycleId: Long? = null,
         onPhotoChangeRequest: () -> Unit = {},
         onVerificationRequested: () -> Unit = {}
     ) {

@@ -43,13 +43,13 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
-import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
+import java.nio.charset.Charset
 import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
@@ -102,7 +102,7 @@ class UnlockScreen {
         var userCycleId by remember {
             mutableStateOf(runBlocking {
                 val a = ((Firebase.firestore.collection("users").document(uid!!).get()
-                    .await().data?.get("CycleOccupied")) as DocumentReference?)?.id
+                    .await().data?.get("CycleOccupied")) as Long?)
                 Log.d("UserCycle", a.toString())
                 a
             })
@@ -195,7 +195,7 @@ class UnlockScreen {
         buttonClick: () -> Unit = {},
         transactionRunning: Int = 0,
         userHasCycle: Boolean? = null,
-        userCycleId: String? = null,
+        userCycleId: Long? = null,
         user: FirebaseUser? = null
     ) {
         val lifecycleOwner = LocalLifecycleOwner.current
@@ -304,12 +304,52 @@ class UnlockScreen {
                     CoroutineScope(Dispatchers.Main).launch {
                         NavProvider.snackbarHostState.showInfoSnackbar("WiFi Connection made")
                     }
-                    CloudFunctions.putToken(
-                        Stand.trigger(
-                            socket,
-                            CloudFunctions.token(Stand.getToken(socket))
+                    val standStatusToken = Stand.getToken(socket)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        NavProvider.snackbarHostState.showInfoSnackbar(
+                            "StandStatusToken Received: ${
+                                standStatusToken.toString(
+                                    Charset.defaultCharset()
+                                )
+                            }"
                         )
-                    )
+                        NavProvider.snackbarHostState.showInfoSnackbar(
+                            "StandStatusToken Len: ${
+                                standStatusToken.size
+                            }"
+                        )
+                    }
+                    val cloudToken = CloudFunctions.token(standStatusToken)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        NavProvider.snackbarHostState.showInfoSnackbar(
+                            "Cloud Function Token Received: ${
+                                standStatusToken.toString(
+                                    Charset.defaultCharset()
+                                )
+                            }"
+                        )
+                        NavProvider.snackbarHostState.showInfoSnackbar(
+                            "Cloud Function Token Len: ${
+                                standStatusToken.size
+                            }"
+                        )
+                    }
+                    val standToken = Stand.trigger(socket, cloudToken)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        NavProvider.snackbarHostState.showInfoSnackbar(
+                            "Stand Triggered: ${
+                                standToken.toString(
+                                    Charset.defaultCharset()
+                                )
+                            }"
+                        )
+                        NavProvider.snackbarHostState.showInfoSnackbar(
+                            "Stand Token Size: ${
+                                standToken.size
+                            }"
+                        )
+                    }
+                    CloudFunctions.putToken(standToken)
                     CoroutineScope(Dispatchers.Main).launch {
                         NavProvider.snackbarHostState.showInfoSnackbar("Done")
                     }
