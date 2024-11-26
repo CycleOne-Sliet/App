@@ -97,7 +97,7 @@ class SignUp {
         }
         try {
             FirebaseAuth.getInstance()
-                .createUserWithEmailAndPassword(email, password)
+                .createUserWithEmailAndPassword(email.filterNot { it.isWhitespace() }, password)
                 .addOnSuccessListener { authResult ->
                     authResult.user?.updateProfile(
                         UserProfileChangeRequest.Builder().setDisplayName(name)
@@ -134,7 +134,7 @@ class SignUp {
         } catch (e: Error) {
             Toast.makeText(
                 context,
-                "Unable to create account",
+                "Account already created",
                 Toast.LENGTH_LONG
             ).show()
             Log.e("SignUp", e.toString())
