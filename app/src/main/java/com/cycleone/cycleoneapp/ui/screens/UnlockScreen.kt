@@ -42,7 +42,6 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -75,22 +74,16 @@ class UnlockScreen {
         navController: NavController = NavProvider.controller
     ) {
 
-        val uid by remember {
-            mutableStateOf(Firebase.auth.uid)
-        }
+        val user: FirebaseUser? = FirebaseAuth.getInstance().currentUser
+        val uid = user?.uid
         if (uid == null) {
             NavProvider.controller.navigate("/sign_in")
             return
         }
-        var user: FirebaseUser? by remember {
-            mutableStateOf(
-                FirebaseAuth.getInstance().currentUser
-            )
-        }
         var userHasCycle: Boolean? by remember {
             mutableStateOf(
                 runBlocking {
-                    val a = (Firebase.firestore.collection("users").document(uid!!).get()
+                    val a = (Firebase.firestore.collection("users").document(uid).get()
                         .await().data?.get("HasCycle")) as Boolean?
                     Log.d("HasCycle", a.toString())
                     a
@@ -100,7 +93,7 @@ class UnlockScreen {
         }
         var userCycleId by remember {
             mutableStateOf(runBlocking {
-                val a = ((Firebase.firestore.collection("users").document(uid!!).get()
+                val a = ((Firebase.firestore.collection("users").document(uid).get()
                     .await().data?.get("CycleOccupied")) as Long?)
                 Log.d("UserCycle", a.toString())
                 a
@@ -136,7 +129,7 @@ class UnlockScreen {
                 }
                 transactionRunning++
                 transactionRunningLocal = transactionRunning
-                userHasCycle = (Firebase.firestore.collection("users").document(uid!!).get()
+                userHasCycle = (Firebase.firestore.collection("users").document(uid).get()
                     .await().data?.get("HasCycle") ?: true) as Boolean
                 CoroutineScope(Dispatchers.Main).launch {
                     if (transactionRunning > 1) {
@@ -149,22 +142,22 @@ class UnlockScreen {
                     }
                     triggerStandSeq(
                         qr,
-                        context,
-                        { t ->
-                            if (t) transactionRunning++
-                            else transactionRunning--
+                        context, userHasCycle
+                    ) { t ->
+                        if (t) transactionRunning++
+                        else transactionRunning--
 
-                            transactionRunningLocal = transactionRunning
-                            Firebase.firestore.collection("users").document(uid!!).get()
-                                .addOnSuccessListener { snap ->
-                                    if (snap.data?.get("HasCycle") != null) {
-                                        userHasCycle = snap.data?.get("HasCycle")!! as Boolean
-                                    }
+                        transactionRunningLocal = transactionRunning
+                        Firebase.firestore.collection("users").document(uid).get()
+                            .addOnSuccessListener { snap ->
+                                if (snap.data?.get("HasCycle") != null) {
+                                    userHasCycle = snap.data?.get("HasCycle")!! as Boolean
                                 }
-                        })
+                            }
+                    }
                     transactionRunning--
                     transactionRunningLocal = transactionRunning
-                    Firebase.firestore.collection("users").document(uid!!).get()
+                    Firebase.firestore.collection("users").document(uid).get()
                         .addOnSuccessListener { snap ->
                             if (snap.data?.get("HasCycle") != null) {
                                 userHasCycle = snap.data?.get("HasCycle")!! as Boolean
@@ -266,9 +259,10 @@ class UnlockScreen {
         }
     }
 
-    suspend fun triggerStandSeq(
+    fun triggerStandSeq(
         qrCode: String,
         context: Context,
+        userHasCycle: Boolean?,
         onTransactionChange: (Boolean) -> Unit
     ) {
         try {
@@ -299,6 +293,10 @@ class UnlockScreen {
                 try {
                     if (transactionRunning > 3) {
                         return@connect
+                    }
+                    val standIsUnlocked = Stand.isUnlocked(socket)
+                    if (standIsUnlocked != userHasCycle) {
+                        NavProvider.addLogEntry("Stand reports that it ${if (standIsUnlocked) "does not have" else "has"} a cycle, if this is false, please report this by clicking here")
                     }
                     CoroutineScope(Dispatchers.Main).launch {
                         NavProvider.addLogEntry("WiFi Connection made")

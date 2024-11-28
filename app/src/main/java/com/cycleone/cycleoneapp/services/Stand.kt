@@ -25,9 +25,8 @@ import com.squareup.moshi.ToJson
 import com.squareup.moshi.adapter
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
+import okio.ByteString.Companion.readByteString
 import java.io.ByteArrayOutputStream
-import java.net.HttpURLConnection
-import java.net.URI
 
 
 // Class representing the various commands that can be sent to the Stand
@@ -152,24 +151,32 @@ class Stand : Application() {
 
         fun getToken(network: Network): ByteArray {
             // Establish an Http Connection
-            val httpURLConnection =
-                network.openConnection(
-                    URI.create("http://10.10.10.10/").toURL()
-                ) as HttpURLConnection
-            httpURLConnection.requestMethod = "GET"
-            httpURLConnection.connect()
-            // Check for any errors
-            var inputStream = httpURLConnection.errorStream
-            if (inputStream == null) {
-                inputStream = httpURLConnection.inputStream
+            val socket = network.socketFactory.createSocket("10.10.10.10", 80)
+            val outputStream = socket.getOutputStream()
+            outputStream.write(ByteArray(1) { 'U'.code.toByte() })
+            outputStream.flush()
+            val inputStream = socket.getInputStream()
+            val isError = inputStream.read()
+            if (isError == 1) {
+                val errorLength = inputStream.read()
+                val error = inputStream.readByteString(errorLength)
+                throw Throwable(error.toString())
             }
+
+            // Check for any errors
             // Read the body
-            return inputStream.readBytes()
+            val resp = ByteArray(40)
+            val readBytes = inputStream.read(resp)
+            if (readBytes != 40) {
+                throw Throwable("Invalid number of bytes read")
+            }
+            socket.close()
+            return resp
         }
 
 
         // Connects to the stand over the mac address
-        suspend fun connect(
+        fun connect(
             mac: MacAddress,
             context: Context,
             onError: (String) -> Unit,
@@ -250,46 +257,49 @@ class Stand : Application() {
             )
         }
 
-        suspend fun trigger(
+        fun trigger(
             network: Network,
             serverRespToken: ByteArray
         ): ByteArray {
-            NavProvider.addLogEntry(
-                "Sending trigger command",
-            )
-            // Establish the connection
-            val httpURLConnection =
-                network.openConnection(
-                    URI.create("http://10.10.10.10").toURL()
-                ) as HttpURLConnection
-            // Set the http request method to POST
-            httpURLConnection.doOutput = true
-            httpURLConnection.requestMethod = "POST"
-            httpURLConnection.connectTimeout = 11000
-            httpURLConnection.readTimeout = 11000
-            // Set the content type to octet stream, to be able to send binary data
-            httpURLConnection.setRequestProperty("Content-Type", "application/octet-stream")
-            // Send the Unlock Command's Data
-            Log.d("ServerRespLen", serverRespToken.size.toString())
-            httpURLConnection.outputStream.write(serverRespToken)
-            httpURLConnection.outputStream.flush()
-            // Perform the request
-            httpURLConnection.connect()
-            NavProvider.addLogEntry(
-                "Trigger Command sent",
-            )
-            // Check for any errors
-            var inputStream = httpURLConnection.errorStream
-            if (inputStream == null) {
-                inputStream = httpURLConnection.inputStream
+            val socket = network.socketFactory.createSocket("10.10.10.10", 80)
+            val outputStream = socket.getOutputStream()
+            outputStream.write(ByteArray(1) { 'T'.code.toByte() })
+            outputStream.write(serverRespToken)
+            outputStream.flush()
+            val inputStream = socket.getInputStream()
+            val isError = inputStream.read()
+            if (isError == 1) {
+                val errorLength = inputStream.read()
+                val error = inputStream.readByteString(errorLength)
+                throw Throwable(error.toString())
             }
-            Log.d("Unlock RespCode", "${httpURLConnection.responseCode}")
-            Log.d("Unlock RespMsg", httpURLConnection.responseMessage)
-            NavProvider.addLogEntry(
-                "Stand Response code: ${httpURLConnection.responseCode}",
-            )
-            // Read the response
-            return inputStream.readBytes()
+
+            // Check for any errors
+            // Read the body
+            val resp = ByteArray(40)
+            val readBytes = inputStream.read(resp)
+            if (readBytes != 40) {
+                throw Throwable("Invalid number of bytes read")
+            }
+            socket.close()
+            return resp
+        }
+
+        fun isUnlocked(network: Network): Boolean {
+            val socket = network.socketFactory.createSocket("10.10.10.10", 80)
+            val outputStream = socket.getOutputStream()
+            outputStream.write(ByteArray(1) { 'S'.code.toByte() })
+            outputStream.flush()
+            val inputStream = socket.getInputStream()
+            val isError = inputStream.read()
+            if (isError == 1) {
+                val errorLength = inputStream.read()
+                val error = inputStream.readByteString(errorLength)
+                throw Throwable(error.toString())
+            }
+            val resp = inputStream.read()
+            socket.close()
+            return resp == 1
         }
     }
 
