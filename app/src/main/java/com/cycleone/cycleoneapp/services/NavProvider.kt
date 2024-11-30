@@ -23,10 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 // Uitility class to make managing navigation easier
 // Allows for getting the NavController without having to pass it in
@@ -99,10 +95,6 @@ class NavProvider {
         fun showDebugModal() {
             logs = listOf()
             updateDebugModalView(true)
-            CoroutineScope(Dispatchers.Main).launch {
-                delay(5000L)
-                hideDebugModal()
-            }
         }
 
         fun addLogEntry(entry: String) {

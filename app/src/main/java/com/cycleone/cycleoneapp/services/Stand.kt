@@ -263,8 +263,7 @@ class Stand : Application() {
         ): ByteArray {
             val socket = network.socketFactory.createSocket("10.10.10.10", 80)
             val outputStream = socket.getOutputStream()
-            outputStream.write(ByteArray(1) { 'T'.code.toByte() })
-            outputStream.write(serverRespToken)
+            outputStream.write(ByteArray(1) { 'T'.code.toByte() } + serverRespToken)
             outputStream.flush()
             val inputStream = socket.getInputStream()
             val isError = inputStream.read()

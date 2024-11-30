@@ -283,7 +283,7 @@ class UnlockScreen {
                 NavProvider.addLogEntry("Mac Address: $mac")
             }
             Stand.connect(
-                mac, context, onError = { it ->
+                mac, context, onError = {
                     CoroutineScope(Dispatchers.Main).launch {
                         NavProvider.addLogEntry(it)
                     }
@@ -292,11 +292,12 @@ class UnlockScreen {
                 onTransactionChange(true)
                 try {
                     if (transactionRunning > 3) {
-                        return@connect
+                        throw Throwable("Transactions Already Running")
                     }
                     val standIsUnlocked = Stand.isUnlocked(socket)
                     if (standIsUnlocked != userHasCycle) {
                         NavProvider.addLogEntry("Stand reports that it ${if (standIsUnlocked) "does not have" else "has"} a cycle, if this is false, please report this by clicking here")
+                        throw Throwable("Invalid stand state")
                     }
                     CoroutineScope(Dispatchers.Main).launch {
                         NavProvider.addLogEntry("WiFi Connection made")
