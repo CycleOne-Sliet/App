@@ -18,6 +18,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,7 +31,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.CloudFunctions
 import com.cycleone.cycleoneapp.services.NavProvider
@@ -46,7 +46,6 @@ import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import java.security.InvalidParameterException
 
@@ -71,7 +70,6 @@ class UnlockScreen {
     @Composable
     fun Create(
         modifier: Modifier = Modifier,
-        navController: NavController = NavProvider.controller
     ) {
 
         val user: FirebaseUser? = FirebaseAuth.getInstance().currentUser
@@ -82,23 +80,17 @@ class UnlockScreen {
         }
         var userHasCycle: Boolean? by remember {
             mutableStateOf(
-                runBlocking {
-                    val a = (Firebase.firestore.collection("users").document(uid).get()
-                        .await().data?.get("HasCycle")) as Boolean?
-                    Log.d("HasCycle", a.toString())
-                    a
-                }
-
+                null
             )
         }
-        var userCycleId by remember {
-            mutableStateOf(runBlocking {
-                val a = ((Firebase.firestore.collection("users").document(uid).get()
-                    .await().data?.get("CycleOccupied")) as Long?)
-                Log.d("UserCycle", a.toString())
-                a
-            })
+        var userCycleId: Long? by remember {
+            mutableStateOf(null)
         }
+        Firebase.firestore.collection("users").document(uid).get()
+            .addOnSuccessListener {
+                userHasCycle = it.data?.get("HasCycle") as Boolean?
+                userCycleId = it.data?.get("CycleOccupied") as Long?
+            }
         Log.d("HasCycleCompos", userHasCycle.toString())
         Log.d("UID", uid.toString())
         var showCamera by remember {
@@ -174,6 +166,11 @@ class UnlockScreen {
             },
             userHasCycle = userHasCycle,
             userCycleId = userCycleId,
+            loadUserData = {
+                val userData = Firebase.firestore.collection("users").document(uid).get().await()
+                userHasCycle = userData.data?.get("HasCycle") as Boolean?
+                userCycleId = userData.data?.get("CycleOccupied") as Long?
+            }
         )
     }
 
@@ -188,8 +185,18 @@ class UnlockScreen {
         transactionRunning: Int = 0,
         userHasCycle: Boolean? = null,
         userCycleId: Long? = null,
-        user: FirebaseUser? = null
+        user: FirebaseUser? = null,
+        loadUserData: suspend () -> Unit = {}
     ) {
+        var loadedUserData by remember {
+            mutableStateOf(false)
+        }
+        LaunchedEffect(loadUserData) {
+            if (!loadedUserData) {
+                loadedUserData = true
+                loadUserData()
+            }
+        }
         val lifecycleOwner = LocalLifecycleOwner.current
         Column(
             modifier = modifier
@@ -207,52 +214,57 @@ class UnlockScreen {
                 } else {
                     Image(painter = painterResource(id = R.drawable.unlock_image), "Unlock Image")
                     Text("Hi ${user?.displayName}\n\n")
-                    if (userHasCycle == true) {
-                        Text("You currently have a cycle allocated\n\n")
-                        Text("CycleId: $userCycleId")
-                    }
+                    if (loadedUserData) {
 
-                    if (userHasCycle != true) {
-                        Text("You currently don't have a cycle allocated\n\n")
-                    }
+                        if (userHasCycle == true) {
+                            Text("You currently have a cycle allocated\n\n")
+                            Text("CycleId: $userCycleId")
+                        }
 
-                    if (permissionState.allPermissionsGranted) {
-                        if (transactionRunning > 0) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.width(64.dp),
-                            )
+                        if (userHasCycle != true) {
+                            Text("You currently don't have a cycle allocated\n\n")
+                        }
+
+                        if (permissionState.allPermissionsGranted) {
+                            if (transactionRunning > 0) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.width(64.dp),
+                                )
+                            } else {
+                                Text(
+                                    "Scan QR Code to \nUnlock",
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(bottom = 20.dp)
+                                )
+                                Button(onClick = {
+                                    buttonClick()
+                                }) {
+                                    if (userHasCycle == true) {
+                                        Text("Scan to return cycle")
+                                    }
+                                    if (userHasCycle != true) {
+                                        Text("Scan to unlock cycle")
+                                    }
+                                    Icon(Icons.Default.Search, "QR")
+                                }
+                            }
                         } else {
-                            Text(
-                                "Scan QR Code to \nUnlock",
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(bottom = 20.dp)
-                            )
-                            Button(onClick = {
-                                buttonClick()
-                            }) {
-                                if (userHasCycle == true) {
-                                    Text("Scan to return cycle")
+                            Column {
+                                val textToShow = if (permissionState.shouldShowRationale) {
+                                    "The camera permission is required to scan the stand's QR, and the wifi permissions are required to connect to the stand"
+                                } else {
+                                    "Without these permission, the app cannot function" +
+                                            "Please grant the permissions\n" + "These permissions will only be used while scanning the QR"
                                 }
-                                if (userHasCycle != true) {
-                                    Text("Scan to unlock cycle")
+                                Text(textToShow)
+                                Button(
+                                    onClick = { permissionState.launchMultiplePermissionRequest() }) {
+                                    Text("Request camera and wifi permissions")
                                 }
-                                Icon(Icons.Default.Search, "QR")
                             }
                         }
                     } else {
-                        Column {
-                            val textToShow = if (permissionState.shouldShowRationale) {
-                                "The camera permission is required to scan the stand's QR, and the wifi permissions are required to connect to the stand"
-                            } else {
-                                "Without these permission, the app cannot function" +
-                                        "Please grant the permissions\n" + "These permissions will only be used while scanning the QR"
-                            }
-                            Text(textToShow)
-                            Button(
-                                onClick = { permissionState.launchMultiplePermissionRequest() }) {
-                                Text("Request camera and wifi permissions")
-                            }
-                        }
+                        CircularProgressIndicator()
                     }
                 }
             }
@@ -267,9 +279,7 @@ class UnlockScreen {
     ) {
         try {
             if (transactionRunning > 2) {
-                CoroutineScope(Dispatchers.Main).launch {
-                    NavProvider.addLogEntry("Some process is already running")
-                }
+                NavProvider.addLogEntry("Some process is already running")
                 return
             }
             val macHex = decodeHexFromStr(qrCode.trim())
@@ -279,14 +289,17 @@ class UnlockScreen {
             }
             val mac: MacAddress = MacAddress.fromBytes(macHex)
             print(mac)
-            CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.addLogEntry("Mac Address: $mac")
-            }
+            NavProvider.addLogEntry("Mac Address: $mac")
             Stand.connect(
-                mac, context, onError = {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.addLogEntry(it)
-                    }
+                mac, context, onUnavailable = {
+                    NavProvider.addLogEntry("Stand Not Available")
+                    Stand.disconnect()
+                }, onBlocked = {
+                    NavProvider.addLogEntry("WiFi seems to be blocked")
+                    Stand.disconnect()
+                }, onLost = {
+                    NavProvider.addLogEntry("WiFi Disconnected")
+                    Stand.disconnect()
                 }
             ) { socket ->
                 onTransactionChange(true)
@@ -299,51 +312,39 @@ class UnlockScreen {
                         NavProvider.addLogEntry("Stand reports that it ${if (standIsUnlocked) "does not have" else "has"} a cycle, if this is false, please report this by clicking here")
                         throw Throwable("Invalid stand state")
                     }
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.addLogEntry("WiFi Connection made")
-                    }
+                    NavProvider.addLogEntry("WiFi Connection made")
                     val standStatusToken = Stand.getToken(socket)
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.addLogEntry(
-                            "StandStatusToken Received"
-                        )
-                        NavProvider.addLogEntry(
-                            "StandStatusToken Len: ${
-                                standStatusToken.size
-                            }"
-                        )
-                    }
+                    NavProvider.addLogEntry(
+                        "StandStatusToken Received"
+                    )
+                    NavProvider.addLogEntry(
+                        "StandStatusToken Len: ${
+                            standStatusToken.size
+                        }"
+                    )
                     val cloudToken = CloudFunctions.token(standStatusToken)
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.addLogEntry(
-                            "Cloud Function Token Received"
-                        )
-                        NavProvider.addLogEntry(
-                            "Cloud Function Token Len: ${
-                                standStatusToken.size
-                            }"
-                        )
-                    }
+                    NavProvider.addLogEntry(
+                        "Cloud Function Token Received"
+                    )
+                    NavProvider.addLogEntry(
+                        "Cloud Function Token Len: ${
+                            standStatusToken.size
+                        }"
+                    )
                     val standToken = Stand.trigger(socket, cloudToken)
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.addLogEntry(
-                            "Stand Triggered"
-                        )
-                        NavProvider.addLogEntry(
-                            "Stand Token Size: ${
-                                standToken.size
-                            }"
-                        )
-                    }
+                    NavProvider.addLogEntry(
+                        "Stand Triggered"
+                    )
+                    NavProvider.addLogEntry(
+                        "Stand Token Size: ${
+                            standToken.size
+                        }"
+                    )
                     CloudFunctions.putToken(standToken)
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.addLogEntry("Done")
-                    }
+                    NavProvider.addLogEntry("Done")
                     Stand.disconnect()
                 } catch (e: Throwable) {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        NavProvider.addLogEntry("Err: $e")
-                    }
+                    NavProvider.addLogEntry("Err: $e")
                     Log.e("ReturnSeq", e.toString())
                     Log.e("ReturnSeq", e.stackTraceToString())
                 } finally {
@@ -351,18 +352,12 @@ class UnlockScreen {
                 }
             }
         } catch (e: InvalidParameterException) {
-            CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.addLogEntry("Invalid QR")
-            }
+            NavProvider.addLogEntry("Invalid QR")
         } catch (e: NumberFormatException) {
-            CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.addLogEntry("Invalid QR")
+            NavProvider.addLogEntry("Invalid QR")
 
-            }
         } catch (e: Throwable) {
-            CoroutineScope(Dispatchers.Main).launch {
-                NavProvider.addLogEntry("Err: $e")
-            }
+            NavProvider.addLogEntry("Err: $e")
             Log.e("ReturnSeqOuter", e.toString())
         }
     }

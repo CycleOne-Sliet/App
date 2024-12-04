@@ -16,6 +16,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -29,7 +33,9 @@ import com.cycleone.cycleoneapp.services.StandLocation
 import com.cycleone.cycleoneapp.services.getStandLocations
 import com.cycleone.cycleoneapp.ui.components.LocationCard
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class Home {
 
@@ -95,13 +101,20 @@ class Home {
                         Text("View All")
                     }
                 }
+                var standLocations: List<StandLocation> by rememberSaveable {
+                    mutableStateOf(listOf())
+                }
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    standLocations = getStandLocations()
+                }
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
                     modifier = Modifier
                         .padding(start = 10.dp, top = 10.dp)
                         .fillMaxWidth(1f),
                 ) {
-                    items(runBlocking { getLocations() }) { location ->
+                    items(standLocations) { location ->
                         LocationCard().Create(location)
                     }
                 }

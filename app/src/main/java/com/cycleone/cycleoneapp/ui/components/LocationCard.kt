@@ -20,7 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,10 +45,10 @@ class LocationCard {
         ), navigator: NavController = NavProvider.controller, href: String = "/home"
     ) {
 
-        var thumbnail: Bitmap? by remember {
+        var thumbnail: Bitmap? by rememberSaveable(key = standInfo.photoUrl) {
             mutableStateOf(null)
         }
-        LaunchedEffect(standInfo) {
+        LaunchedEffect(standInfo.photoUrl) {
             launch {
                 Log.d("Started Download", "Downloading started")
                 val imageBytes =

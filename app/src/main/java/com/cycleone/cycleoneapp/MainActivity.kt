@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -167,13 +168,43 @@ fun MainScaffold(
                 NavigationBar {
                     NavigationBarItem(
                         selected = navController.currentDestination?.route == "/profile",
-                        onClick = { navController.navigate("/profile") },
+                        onClick = {
+                            navController.navigate("/profile")
+
+                            {
+                                // Pop up to the start destination of the graph to
+                                // avoid building up a large stack of destinations
+                                // on the back stack as users select items
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                // Avoid multiple copies of the same destination when
+                                // reselecting the same item
+                                launchSingleTop = true
+                                // Restore state when reselecting a previously selected item
+                                restoreState = true
+                            }
+                        },
                         icon = {
                             Icon(Icons.Default.Person, "Profile")
                         })
                     NavigationBarItem(
                         selected = navController.currentDestination?.route == "/unlock_screen",
-                        onClick = { navController.navigate("/unlock_screen") },
+                        onClick = {
+                            navController.navigate("/unlock_screen") {
+                                // Pop up to the start destination of the graph to
+                                // avoid building up a large stack of destinations
+                                // on the back stack as users select items
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                // Avoid multiple copies of the same destination when
+                                // reselecting the same item
+                                launchSingleTop = true
+                                // Restore state when reselecting a previously selected item
+                                restoreState = true
+                            }
+                        },
                         icon = {
                             Icon(Icons.Default.Search, "Scan")
                         })

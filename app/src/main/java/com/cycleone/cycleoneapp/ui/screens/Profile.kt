@@ -18,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,7 +39,6 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.FirebaseStorage
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 
 const val PICK_PDF_FILE = 2
@@ -65,23 +65,19 @@ class Profile {
             }
         var userHasCycle: Boolean? by remember {
             mutableStateOf(
-                runBlocking {
-                    val a = (Firebase.firestore.collection("users").document(user?.uid!!).get()
-                        .await().data?.get("HasCycle")) as Boolean?
-                    Log.d("HasCycle", a.toString())
-                    a
-                }
+                null
             )
         }
-        var userCycleId by remember {
-            mutableStateOf(runBlocking {
-                val a = (Firebase.firestore.collection("users").document(user?.uid!!).get()
-                    .await().data?.get("CycleOccupied")) as Long?
-                Log.d("UserCycle", a.toString())
-                a
-            })
+        var userCycleId: Long? by remember {
+            mutableStateOf(null)
         }
-        UI(modifier, user, userHasCycle, userCycleId, onPhotoChangeRequest = {
+
+        UI(modifier, user, userHasCycle, userCycleId, loadUserData = {
+            val userData =
+                Firebase.firestore.collection("users").document(user?.uid!!).get().await()
+            userHasCycle = userData.data?.get("HasCycle") as Boolean?
+            userCycleId = userData.data?.get("CycleOccupied") as Long?
+        }, onPhotoChangeRequest = {
             pickFileLauncher?.launch("*/*")
         }, onVerificationRequested = {
             user?.reload()
@@ -115,9 +111,20 @@ class Profile {
         user: FirebaseUser? = null,
         userHasCycle: Boolean? = null,
         userCycleId: Long? = null,
+        loadUserData: suspend () -> Unit = {},
         onPhotoChangeRequest: () -> Unit = {},
         onVerificationRequested: () -> Unit = {}
     ) {
+
+        var loadedUserData by remember {
+            mutableStateOf(false)
+        }
+        LaunchedEffect(loadUserData) {
+            if (!loadedUserData) {
+                loadedUserData = true
+                loadUserData()
+            }
+        }
         Column(
             modifier = modifier
                 .fillMaxSize(),

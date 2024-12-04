@@ -2,6 +2,8 @@ package com.cycleone.cycleoneapp.services
 
 import android.app.Activity
 import android.app.Application
+import android.bluetooth.BluetoothAdapter
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
@@ -17,6 +19,7 @@ import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat.startActivityForResult
+import androidx.core.content.ContextCompat.startActivity
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.squareup.moshi.FromJson
@@ -27,6 +30,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import okio.ByteString.Companion.readByteString
 import java.io.ByteArrayOutputStream
+import java.lang.reflect.Method
 
 
 // Class representing the various commands that can be sent to the Stand
@@ -179,8 +183,10 @@ class Stand : Application() {
         fun connect(
             mac: MacAddress,
             context: Context,
-            onError: (String) -> Unit,
-            onConnect: suspend (Network) -> Unit
+            onUnavailable: () -> Unit,
+            onLost: () -> Unit,
+            onBlocked: () -> Unit,
+            onConnect: suspend (Network) -> Unit,
         ) {
             // Used to configure the wifi network
             // We are setting the Ssid to CycleOneS1
@@ -226,13 +232,48 @@ class Stand : Application() {
 
                 override fun onUnavailable() {
                     super.onUnavailable()
+                    onUnavailable()
                     Log.e("Unavailable", "Network is not found")
+                    if (isHotspotActive(context)) {
+                        Toast.makeText(
+                            appContext,
+                            "Having hotspot active can lead to issues with connection, please turn hotspot off",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        val intent = Intent(Intent.ACTION_MAIN, null)
+                        intent.addCategory(Intent.CATEGORY_LAUNCHER)
+                        val cn = ComponentName(
+                            "com.android.settings",
+                            "com.android.settings.TetherSettings"
+                        )
+                        intent.setComponent(cn)
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(context, intent, null)
+                    } else if (isBluetoothActive(context)) {
+                        Toast.makeText(
+                            appContext,
+                            "Having Bluetooth on can cause connection problems, please turn it off",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        val intent =
+                            Intent("android.bluetooth.adapter.action.REQUEST_DISABLE")
+                        startActivity(context, intent, null)
+                    }
                     Toast.makeText(
                         appContext,
-                        "Stand is not available, Check if a stand is near",
+                        "Could not connect to stand",
                         Toast.LENGTH_LONG
                     ).show()
-                    onError("Stand Unavailable")
+                }
+
+                override fun onLost(network: Network) {
+                    super.onLost(network)
+                    onLost()
+                    Toast.makeText(
+                        appContext,
+                        "Stand WiFi connection lost",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
 
 
@@ -240,7 +281,7 @@ class Stand : Application() {
                 override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                     super.onBlockedStatusChanged(network, blocked)
                     if (blocked) {
-                        onError("Blocked")
+                        onBlocked()
                         Log.e("Unavailable", "Network is Blocked")
                         Toast.makeText(
                             appContext,
@@ -322,4 +363,20 @@ class StandLocation(val location: String, val photoUrl: String) {
         return Firebase.firestore.collection("stands").whereEqualTo("Location", location).get()
             .await().documents.map { d -> d["Cycles"] as List<*> }.sumOf { c -> c.size }
     }
+}
+
+fun isHotspotActive(context: Context): Boolean {
+    val wifiManager =
+        context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    val method: Method = wifiManager.javaClass.getMethod(
+        "getWifiApState"
+    )
+    method.isAccessible = true
+    val invoke: Int = method.invoke(wifiManager) as Int
+    return invoke == 10 || invoke == 12 || invoke == 13
+}
+
+fun isBluetoothActive(context: Context): Boolean {
+    val mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+    return mBluetoothAdapter?.isEnabled == true
 }
