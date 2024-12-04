@@ -17,9 +17,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,7 +41,6 @@ import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.PrestyledText
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.launch
 
@@ -56,7 +55,9 @@ class SignUp {
         password: String,
         password2: String,
         name: String,
-        termsCondition: Boolean
+        termsCondition: Boolean,
+        onStart: () -> Unit,
+        onComplete: () -> Unit,
     ) {
         if (name.isBlank()) {
             Toast.makeText(context, "Empty Name", Toast.LENGTH_LONG).show()
@@ -96,6 +97,7 @@ class SignUp {
             return
         }
         try {
+            onStart()
             FirebaseAuth.getInstance()
                 .createUserWithEmailAndPassword(email.filterNot { it.isWhitespace() }, password)
                 .addOnSuccessListener { authResult ->
@@ -130,6 +132,8 @@ class SignUp {
                         "Unable to create account",
                         Toast.LENGTH_LONG
                     ).show()
+                }.addOnCompleteListener {
+                    onComplete()
                 }
         } catch (e: Error) {
             Toast.makeText(
@@ -162,6 +166,9 @@ class SignUp {
             mutableStateOf("")
         }
         var termsCondition by remember {
+            mutableStateOf(false)
+        }
+        var loading by remember {
             mutableStateOf(false)
         }
         val context = LocalContext.current
@@ -234,6 +241,7 @@ class SignUp {
                 )
             }
             Button(
+                enabled = !loading,
                 onClick = {
                     coroutineScope.launch {
                         onSignUp(
@@ -242,12 +250,22 @@ class SignUp {
                             password = password,
                             password2 = password2,
                             name = name,
-                            termsCondition
+                            termsCondition,
+                            onStart = {
+                                loading = true
+                            },
+                            onComplete = {
+                                loading = false
+                            }
                         )
                     }
                 }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium
             ) {
-                Text("Sign Up", style = MaterialTheme.typography.bodyLarge)
+                if (loading) {
+                    CircularProgressIndicator()
+                } else {
+                    Text("Sign Up", style = MaterialTheme.typography.bodyLarge)
+                }
             }
             TextButton(onClick = {
                 navController.navigate("/sign_in")

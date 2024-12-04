@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,10 +39,12 @@ import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.PrestyledText
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SignIn {
-    fun onSignIn(context: Context, email: String, password: String) {
+    fun onSignIn(context: Context, email: String, password: String, onComplete: () -> Unit) {
         Log.d("Initiating ", "Logging In")
         Log.i("Creds", "Username:  $email")
         Log.i("Creds", "Password:  $password")
@@ -70,6 +73,8 @@ class SignIn {
                     } else {
                         NavProvider.controller.navigate("/home")
                     }
+                }.addOnCompleteListener {
+
                 }
         } catch (e: Error) {
             Toast.makeText(
@@ -98,6 +103,7 @@ class SignIn {
         val context = LocalContext.current
         val coroutineScope = rememberCoroutineScope()
         val scrollState = rememberScrollState()
+        var loading by remember { mutableStateOf(false) }
         Column(
             modifier = modifier
                 .fillMaxSize()
@@ -142,23 +148,36 @@ class SignIn {
             )
 
             Button(
+                enabled = !loading,
                 onClick = {
+                    loading = true
                     coroutineScope.launch {
-                        onSignIn(
-                            context = context,
-                            email = email,
-                            password = password
-                        )
+                        withContext(Dispatchers.IO) {
+                            onSignIn(
+                                context = context,
+                                email = email,
+                                password = password,
+                                onComplete = { loading = false }
+
+                            )
+
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(0.75F),
                 shape = RoundedCornerShape(15.dp)
 
             ) {
-                Text("Sign In")
+                if (loading) {
+                    CircularProgressIndicator()
+                } else {
+                    Text("Sign In")
+                }
             }
-            TextButton(onClick = { navController.navigate("/sign_up") }) {
-                Text("Not Registered? Sign Up", modifier = Modifier.padding(vertical = 5.dp))
+            if (!loading) {
+                TextButton(onClick = { navController.navigate("/sign_up") }) {
+                    Text("Not Registered? Sign Up", modifier = Modifier.padding(vertical = 5.dp))
+                }
             }
         }
     }
