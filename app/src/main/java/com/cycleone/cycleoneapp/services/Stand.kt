@@ -303,9 +303,11 @@ class Stand : Application() {
             serverRespToken: ByteArray
         ): ByteArray {
             val socket = network.socketFactory.createSocket("10.10.10.10", 80)
+            socket.setSoLinger(true, 30)
             val outputStream = socket.getOutputStream()
             outputStream.write(ByteArray(1) { 'T'.code.toByte() } + serverRespToken)
             outputStream.flush()
+            socket.shutdownOutput()
             val inputStream = socket.getInputStream()
             val isError = inputStream.read()
             if (isError == 1) {
@@ -321,15 +323,22 @@ class Stand : Application() {
             if (readBytes != 40) {
                 throw Throwable("Invalid number of bytes read")
             }
+            // clearing out the buffer
+            while (inputStream.available() != 0) {
+                inputStream.read()
+            }
+            socket.shutdownInput()
             socket.close()
             return resp
         }
 
         fun isUnlocked(network: Network): Boolean {
             val socket = network.socketFactory.createSocket("10.10.10.10", 80)
+            socket.setSoLinger(true, 10)
             val outputStream = socket.getOutputStream()
             outputStream.write(ByteArray(1) { 'S'.code.toByte() })
             outputStream.flush()
+            socket.shutdownOutput()
             val inputStream = socket.getInputStream()
             val isError = inputStream.read()
             if (isError == 1) {
@@ -338,6 +347,11 @@ class Stand : Application() {
                 throw Throwable(error.toString())
             }
             val resp = inputStream.read()
+            // clearing out the buffer
+            while (inputStream.available() != 0) {
+                inputStream.read()
+            }
+            socket.shutdownInput()
             socket.close()
             return resp == 1
         }
