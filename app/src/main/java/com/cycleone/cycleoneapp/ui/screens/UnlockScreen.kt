@@ -348,6 +348,7 @@ class UnlockScreen {
                     Log.e("ReturnSeq", e.toString())
                     Log.e("ReturnSeq", e.stackTraceToString())
                 } finally {
+                    Stand.disconnect()
                     onTransactionChange(false)
                 }
             }
