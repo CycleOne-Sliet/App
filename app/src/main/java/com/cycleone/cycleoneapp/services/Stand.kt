@@ -308,7 +308,6 @@ class Stand : Application() {
             outputStream.write(ByteArray(1) { 'T'.code.toByte() } + serverRespToken)
             val inputStream = socket.getInputStream()
             outputStream.flush()
-            socket.shutdownOutput()
             val isError = inputStream.read()
             if (isError == 1) {
                 val errorLength = inputStream.read()
@@ -339,7 +338,6 @@ class Stand : Application() {
             val inputStream = socket.getInputStream()
             outputStream.write(ByteArray(1) { 'S'.code.toByte() })
             outputStream.flush()
-            socket.shutdownOutput()
             val isError = inputStream.read()
             if (isError == 1) {
                 val errorLength = inputStream.read()
