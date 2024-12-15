@@ -306,9 +306,9 @@ class Stand : Application() {
             socket.setSoLinger(true, 30)
             val outputStream = socket.getOutputStream()
             outputStream.write(ByteArray(1) { 'T'.code.toByte() } + serverRespToken)
+            val inputStream = socket.getInputStream()
             outputStream.flush()
             socket.shutdownOutput()
-            val inputStream = socket.getInputStream()
             val isError = inputStream.read()
             if (isError == 1) {
                 val errorLength = inputStream.read()
@@ -320,6 +320,7 @@ class Stand : Application() {
             // Read the body
             val resp = ByteArray(40)
             val readBytes = inputStream.read(resp)
+            Log.d("trigger", "Read bytes: ${readBytes}")
             if (readBytes != 40) {
                 throw Throwable("Invalid number of bytes read")
             }
@@ -327,7 +328,6 @@ class Stand : Application() {
             while (inputStream.available() != 0) {
                 inputStream.read()
             }
-            socket.shutdownInput()
             socket.close()
             return resp
         }
@@ -336,10 +336,10 @@ class Stand : Application() {
             val socket = network.socketFactory.createSocket("10.10.10.10", 80)
             socket.setSoLinger(true, 10)
             val outputStream = socket.getOutputStream()
+            val inputStream = socket.getInputStream()
             outputStream.write(ByteArray(1) { 'S'.code.toByte() })
             outputStream.flush()
             socket.shutdownOutput()
-            val inputStream = socket.getInputStream()
             val isError = inputStream.read()
             if (isError == 1) {
                 val errorLength = inputStream.read()
@@ -351,7 +351,6 @@ class Stand : Application() {
             while (inputStream.available() != 0) {
                 inputStream.read()
             }
-            socket.shutdownInput()
             socket.close()
             return resp == 1
         }
