@@ -3,21 +3,21 @@ package com.cycleone.cycleoneapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,7 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -34,10 +34,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import com.cycleone.cycleoneapp.services.NavProvider
+import com.cycleone.cycleoneapp.ui.components.NormalBackground
 import com.cycleone.cycleoneapp.ui.screens.AllLocations
 import com.cycleone.cycleoneapp.ui.screens.ForgotPassword
 import com.cycleone.cycleoneapp.ui.screens.Home
-import com.cycleone.cycleoneapp.ui.screens.Landing
+import com.cycleone.cycleoneapp.ui.screens.Onboarding
 import com.cycleone.cycleoneapp.ui.screens.OtpScreen
 import com.cycleone.cycleoneapp.ui.screens.Profile
 import com.cycleone.cycleoneapp.ui.screens.SignIn
@@ -71,7 +72,7 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
     NavProvider.controller = navController
     val user = FirebaseAuth.getInstance().currentUser
     val currentLocation = if (user == null) {
-        "/landing"
+        "/onboarding"
     } else {
         "/home"
     }
@@ -83,28 +84,36 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
         mutableStateOf(false)
     }
 
+    var useNormalBackground by remember {
+        mutableStateOf(false)
+    }
+
     MainScaffold(
         navController = navController,
         showTopBar = showTopBar,
+        useNormalBackground = useNormalBackground,
         showBottomBar = showBottomBar
     ) { modifier ->
         NavHost(
             navController = navController,
             startDestination = currentLocation,
         ) {
-            composable("/landing") {
+            composable("/onboarding") {
                 showTopBar = false
                 showBottomBar = false
-                Landing().Create(modifier)
+                useNormalBackground = false
+                Onboarding().Create(modifier)
             }
             composable("/home", deepLinks = listOf(navDeepLink { uriPattern = "$uri/home" })) {
                 showTopBar = false
                 showBottomBar = true
+                useNormalBackground = true
                 Home().Create(modifier)
             }
             composable("/profile") {
                 showTopBar = true
                 showBottomBar = true
+                useNormalBackground = true
                 Profile().Create(modifier)
             }
             composable(
@@ -113,31 +122,37 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
             ) {
                 showTopBar = false
                 showBottomBar = false
+                useNormalBackground = true
                 SignIn().Create(modifier)
             }
             composable("/sign_up") {
                 showTopBar = false
                 showBottomBar = false
+                useNormalBackground = true
                 SignUp().Create(modifier)
             }
             composable("/forgot_otp") {
                 showTopBar = true
                 showBottomBar = true
+                useNormalBackground = true
                 OtpScreen().Create(modifier)
             }
             composable("/unlock_screen") {
                 showTopBar = true
                 showBottomBar = true
+                useNormalBackground = true
                 UnlockScreen().Create(modifier)
             }
             composable("/forgot_password") {
                 showTopBar = true
                 showBottomBar = false
+                useNormalBackground = true
                 ForgotPassword().Create(modifier)
             }
             composable("/allLocations") {
                 showTopBar = true
                 showBottomBar = true
+                useNormalBackground = true
                 AllLocations().Create(modifier)
             }
         }
@@ -149,6 +164,7 @@ fun MainScaffold(
     navController: NavController = rememberNavController(),
     showTopBar: Boolean,
     showBottomBar: Boolean,
+    useNormalBackground: Boolean,
     content: @Composable (Modifier) -> Unit
 ) {
     Scaffold(
@@ -156,11 +172,16 @@ fun MainScaffold(
         floatingActionButton = { NavProvider.debugButton() },
         topBar = {
             if (showTopBar) {
-                TextButton(
-                    onClick = { navController.popBackStack() }, modifier = Modifier
-                        .background(Color.Transparent)
+                Button(
+                    onClick = { navController.popBackStack() },
+                    colors = ButtonColors(
+                        Color.Transparent,
+                        Color.White,
+                        Color.Transparent,
+                        Color.Gray
+                    )
                 ) {
-                    Text("‹", fontSize = 50.sp, style = MaterialTheme.typography.titleLarge)
+                    Image(painterResource(R.drawable.left_arrow), "Back")
                 }
             }
         }, bottomBar = {
@@ -217,6 +238,12 @@ fun MainScaffold(
                 }
             }
         }) { innerPadding ->
-        content(Modifier.padding(innerPadding))
+        if (useNormalBackground) {
+            NormalBackground(Modifier.padding(innerPadding)) {
+                content(Modifier)
+            }
+        } else {
+            content(Modifier.padding(innerPadding))
+        }
     }
 }

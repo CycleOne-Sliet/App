@@ -1,6 +1,5 @@
 package com.cycleone.cycleoneapp.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.twotone.Add
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -26,10 +26,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.cycleone.cycleoneapp.ui.theme.monsterratFamily
 
 class PrestyledText {
     @Composable
@@ -38,59 +43,41 @@ class PrestyledText {
         placeholder: String = "",
         onChange: (String) -> Unit = {},
         enabled: Boolean = true,
-        label: String = "",
+        isPassword: Boolean = false,
         icon: ImageVector? = null,
     ) {
         var c by remember { mutableStateOf("") }
         TextField(
             modifier = modifier,
             colors = TextFieldDefaults.colors(
+                unfocusedContainerColor = Color(0x33c4c4c4),
+                focusedContainerColor = Color(0x53c4c4c4),
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
             ),
             shape = MaterialTheme.shapes.medium,
             value = c,
             onValueChange = { x: String -> c = x; onChange(x) },
-            placeholder = { Text(placeholder) },
+            visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+            placeholder = {
+                Text(
+                    placeholder,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Light,
+                    fontFamily = monsterratFamily,
+                    color = Color(0xffdadada)
+                )
+            },
             enabled = enabled,
-            label = { Text(label) },
-            trailingIcon = {
-                icon?.let {
-                    Image(
-                        it, contentDescription = "Icon"
-                    )
-                }
-            })
-    }
-
-    @Composable
-    fun Password(
-        modifier: Modifier = Modifier,
-        placeholder: String = "",
-        onChange: (String) -> Unit = {},
-        enabled: Boolean = true,
-        label: String = "",
-        icon: ImageVector? = null,
-    ) {
-        var c by remember { mutableStateOf("") }
-        TextField(
-            modifier = modifier,
-            shape = MaterialTheme.shapes.medium,
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
+            textStyle = TextStyle.Default.merge(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Light,
+                fontFamily = monsterratFamily,
+                color = Color.White
             ),
-            value = c,
-            visualTransformation = PasswordVisualTransformation(),
-            onValueChange = { x: String -> c = x; onChange(x) },
-            placeholder = { Text(placeholder) },
-            enabled = enabled,
-            label = { Text(label) },
             trailingIcon = {
                 icon?.let {
-                    Image(
-                        it, contentDescription = "Icon"
-                    )
+                    Icon(it, "Icon", tint = Color.White)
                 }
             })
     }
@@ -146,8 +133,8 @@ class PrestyledText {
     @Preview
     fun prev() {
         Column {
-            Regular(Modifier, "Preview", {}, true, label = "Test", Icons.Default.Build)
-            Password(Modifier, "Preview", {}, true, label = "Test", Icons.TwoTone.Add)
+            Regular(modifier  = Modifier, placeholder = "Preview", onChange = {}, enabled = true,  icon = Icons.Default.Build)
+            Regular(modifier  = Modifier, placeholder = "Password", onChange = {}, enabled = true,  icon = Icons.Default.Build, isPassword = true)
             OTP()
         }
     }

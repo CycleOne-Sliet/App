@@ -6,7 +6,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
@@ -17,21 +16,14 @@ import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
     primary = Color(0xffff6b35),
-    secondary = Color(0xfff7c59f),
-    tertiary = Color(0xffefefd0),
-    onPrimary = Color(0xffefefd0)
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xff004e89),
-    secondary = Color(0xff1a659e),
-    tertiary = Color(0xffefefd0),
+    secondary = Color(0xff252322),
+    tertiary = Color(0xffffffff),
     onPrimary = Color(0xffefefd0)
 )
 
 private val shapes = Shapes(
-    extraLarge = RoundedCornerShape(25.dp),
-    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(50.dp),
+    large = RoundedCornerShape(15.dp),
     medium = RoundedCornerShape(10.dp),
 )
 
@@ -43,10 +35,7 @@ fun CycleoneAppTheme(
     content: @Composable Function0<Unit>
 ) {
 
-    val colorScheme = when {
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = DarkColorScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -60,6 +49,7 @@ fun CycleoneAppTheme(
     MaterialTheme(
         colorScheme,
         typography = typography,
-        content = content
+        content = content,
+        shapes = shapes
     )
 }

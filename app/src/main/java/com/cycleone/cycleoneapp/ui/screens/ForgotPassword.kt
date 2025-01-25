@@ -103,7 +103,6 @@ class ForgotPassword {
                     .fillMaxWidth(),
                 placeholder = "Enter your Email",
                 onChange = { x -> email = x },
-                label = "Mail",
                 icon = Icons.Outlined.Email
             )
 

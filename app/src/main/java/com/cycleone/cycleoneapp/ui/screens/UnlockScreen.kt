@@ -121,8 +121,10 @@ class UnlockScreen {
                 }
                 transactionRunning++
                 transactionRunningLocal = transactionRunning
+                Log.d("onScanSuccess", "Fetching Cycle Status from backend")
                 userHasCycle = (Firebase.firestore.collection("users").document(uid).get()
                     .await().data?.get("HasCycle") ?: true) as Boolean
+                Log.d("onScanSuccess", "Cycle Status: ${userHasCycle}")
                 CoroutineScope(Dispatchers.Main).launch {
                     if (transactionRunning > 1) {
                         return@launch
