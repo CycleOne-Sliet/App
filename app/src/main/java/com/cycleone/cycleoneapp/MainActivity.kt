@@ -209,3 +209,11 @@ fun PreviewOnboarding() {
         Onboarding().UI()
     }
 }
+
+@Composable
+@Preview
+fun PreviewForgotPassword() {
+    MainScaffold(rememberNavController(), showTopBar = true, useNormalBackground = true) {
+        ForgotPassword().UI()
+    }
+}
