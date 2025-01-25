@@ -6,16 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -26,8 +19,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -92,7 +85,6 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
         navController = navController,
         showTopBar = showTopBar,
         useNormalBackground = useNormalBackground,
-        showBottomBar = showBottomBar
     ) { modifier ->
         NavHost(
             navController = navController,
@@ -163,7 +155,6 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
 fun MainScaffold(
     navController: NavController = rememberNavController(),
     showTopBar: Boolean,
-    showBottomBar: Boolean,
     useNormalBackground: Boolean,
     content: @Composable (Modifier) -> Unit
 ) {
@@ -184,59 +175,6 @@ fun MainScaffold(
                     Image(painterResource(R.drawable.left_arrow), "Back")
                 }
             }
-        }, bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    NavigationBarItem(
-                        selected = navController.currentDestination?.route == "/profile",
-                        onClick = {
-                            navController.navigate("/profile")
-
-                            {
-                                // Pop up to the start destination of the graph to
-                                // avoid building up a large stack of destinations
-                                // on the back stack as users select items
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                // Avoid multiple copies of the same destination when
-                                // reselecting the same item
-                                launchSingleTop = true
-                                // Restore state when reselecting a previously selected item
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            Icon(Icons.Default.Person, "Profile")
-                        })
-                    NavigationBarItem(
-                        selected = navController.currentDestination?.route == "/unlock_screen",
-                        onClick = {
-                            navController.navigate("/unlock_screen") {
-                                // Pop up to the start destination of the graph to
-                                // avoid building up a large stack of destinations
-                                // on the back stack as users select items
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                // Avoid multiple copies of the same destination when
-                                // reselecting the same item
-                                launchSingleTop = true
-                                // Restore state when reselecting a previously selected item
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            Icon(Icons.Default.Search, "Scan")
-                        })
-                    NavigationBarItem(
-                        selected = navController.currentDestination?.route == "/notifications",
-                        onClick = { /*navController.navigate("/notifications")*/ },
-                        icon = {
-                            Icon(Icons.Default.Notifications, "Notifications")
-                        })
-                }
-            }
         }) { innerPadding ->
         if (useNormalBackground) {
             NormalBackground(Modifier.padding(innerPadding)) {
@@ -245,5 +183,29 @@ fun MainScaffold(
         } else {
             content(Modifier.padding(innerPadding))
         }
+    }
+}
+
+@Composable
+@Preview
+fun PreviewSignUp() {
+    MainScaffold(rememberNavController(), showTopBar = true, useNormalBackground = true) {
+        SignUp().UI()
+    }
+}
+
+@Composable
+@Preview
+fun PreviewSignIn() {
+    MainScaffold(rememberNavController(), showTopBar = true, useNormalBackground = true) {
+        SignIn().UI()
+    }
+}
+
+@Composable
+@Preview
+fun PreviewOnboarding() {
+    MainScaffold(rememberNavController(), showTopBar = true, useNormalBackground = false) {
+        Onboarding().UI()
     }
 }

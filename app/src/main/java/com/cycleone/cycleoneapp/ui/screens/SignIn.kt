@@ -172,7 +172,10 @@ class SignIn {
             }
 
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 if (loading) {
                     CircularProgressIndicator()
                 } else {
@@ -191,7 +194,7 @@ class SignIn {
                             }
                         },
                         text = "Sign In",
-                        modifier = Modifier.fillMaxWidth(0.75F),
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 if (!loading) {
