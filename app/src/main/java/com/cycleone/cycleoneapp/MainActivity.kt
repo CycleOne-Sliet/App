@@ -26,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
+import com.cycleone.cycleoneapp.services.CachedNetworkClient
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.NormalBackground
 import com.cycleone.cycleoneapp.ui.screens.AllLocations
@@ -46,6 +47,7 @@ val uri = "cycleone://cycleone.base"
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        CachedNetworkClient.initialize(application)
         setContent {
             CycleoneAppTheme {
                 // A surface container using the 'background' color from the theme
@@ -77,14 +79,18 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
         mutableStateOf(false)
     }
 
-    var useNormalBackground by remember {
+    var useImageBackground by remember {
         mutableStateOf(false)
+    }
+
+    var backgroundImage: Int? by remember {
+        mutableStateOf(null)
     }
 
     MainScaffold(
         navController = navController,
         showTopBar = showTopBar,
-        useNormalBackground = useNormalBackground,
+        backgroundImage = backgroundImage
     ) { modifier ->
         NavHost(
             navController = navController,
@@ -93,19 +99,19 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
             composable("/onboarding") {
                 showTopBar = false
                 showBottomBar = false
-                useNormalBackground = false
+                backgroundImage = R.drawable.onboard_1
                 Onboarding().Create(modifier)
             }
             composable("/home", deepLinks = listOf(navDeepLink { uriPattern = "$uri/home" })) {
                 showTopBar = false
                 showBottomBar = true
-                useNormalBackground = true
+                backgroundImage = R.drawable.dashboard
                 Home().Create(modifier)
             }
             composable("/profile") {
                 showTopBar = true
                 showBottomBar = true
-                useNormalBackground = true
+                backgroundImage = R.drawable.normal_background
                 Profile().Create(modifier)
             }
             composable(
@@ -114,37 +120,37 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
             ) {
                 showTopBar = false
                 showBottomBar = false
-                useNormalBackground = true
+                backgroundImage = R.drawable.normal_background
                 SignIn().Create(modifier)
             }
             composable("/sign_up") {
                 showTopBar = false
                 showBottomBar = false
-                useNormalBackground = true
+                backgroundImage = R.drawable.normal_background
                 SignUp().Create(modifier)
             }
             composable("/forgot_otp") {
                 showTopBar = true
                 showBottomBar = true
-                useNormalBackground = true
+                backgroundImage = R.drawable.normal_background
                 OtpScreen().Create(modifier)
             }
             composable("/unlock_screen") {
                 showTopBar = true
                 showBottomBar = true
-                useNormalBackground = true
+                backgroundImage = R.drawable.normal_background
                 UnlockScreen().Create(modifier)
             }
             composable("/forgot_password") {
                 showTopBar = true
                 showBottomBar = false
-                useNormalBackground = true
+                backgroundImage = R.drawable.normal_background
                 ForgotPassword().Create(modifier)
             }
             composable("/allLocations") {
                 showTopBar = true
                 showBottomBar = true
-                useNormalBackground = true
+                backgroundImage = R.drawable.normal_background
                 AllLocations().Create(modifier)
             }
         }
@@ -155,7 +161,7 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
 fun MainScaffold(
     navController: NavController = rememberNavController(),
     showTopBar: Boolean,
-    useNormalBackground: Boolean,
+    backgroundImage: Int? = null,
     content: @Composable (Modifier) -> Unit
 ) {
     Scaffold(
@@ -176,8 +182,8 @@ fun MainScaffold(
                 }
             }
         }) { innerPadding ->
-        if (useNormalBackground) {
-            NormalBackground(Modifier.padding(innerPadding)) {
+        if (backgroundImage != null) {
+            NormalBackground(Modifier.padding(innerPadding), backgroundImage = backgroundImage) {
                 content(Modifier)
             }
         } else {
@@ -189,7 +195,7 @@ fun MainScaffold(
 @Composable
 @Preview
 fun PreviewSignUp() {
-    MainScaffold(rememberNavController(), showTopBar = true, useNormalBackground = true) {
+    MainScaffold(rememberNavController(), showTopBar = true) {
         SignUp().UI()
     }
 }
@@ -197,7 +203,7 @@ fun PreviewSignUp() {
 @Composable
 @Preview
 fun PreviewSignIn() {
-    MainScaffold(rememberNavController(), showTopBar = true, useNormalBackground = true) {
+    MainScaffold(rememberNavController(), showTopBar = true) {
         SignIn().UI()
     }
 }
@@ -205,7 +211,7 @@ fun PreviewSignIn() {
 @Composable
 @Preview
 fun PreviewOnboarding() {
-    MainScaffold(rememberNavController(), showTopBar = true, useNormalBackground = false) {
+    MainScaffold(rememberNavController(), showTopBar = true) {
         Onboarding().UI()
     }
 }
@@ -213,7 +219,7 @@ fun PreviewOnboarding() {
 @Composable
 @Preview
 fun PreviewForgotPassword() {
-    MainScaffold(rememberNavController(), showTopBar = true, useNormalBackground = true) {
+    MainScaffold(rememberNavController(), showTopBar = true) {
         ForgotPassword().UI()
     }
 }

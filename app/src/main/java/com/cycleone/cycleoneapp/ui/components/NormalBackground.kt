@@ -19,6 +19,7 @@ import com.cycleone.cycleoneapp.R
 @Preview
 fun NormalBackground(
     modifier: Modifier = Modifier,
+    backgroundImage: Int = R.drawable.normal_background,
     content: @Composable() (BoxScope.() -> Unit) = {}
 ) {
     Box(
@@ -27,9 +28,8 @@ fun NormalBackground(
             .fillMaxSize(),
         contentAlignment = Alignment.BottomStart
     ) {
-        // TODO: Include the proper logo in onboard
         Image(
-            painter = painterResource(R.drawable.normal_background),
+            painter = painterResource(backgroundImage),
             "Background",
             modifier = Modifier.fillMaxWidth(),
             contentScale = ContentScale.FillWidth
