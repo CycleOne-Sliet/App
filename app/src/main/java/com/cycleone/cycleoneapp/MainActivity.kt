@@ -44,7 +44,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
 
 
-val uri = "cycleone://cycleone.base"
+const val uri = "cycleone://cycleone.base"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

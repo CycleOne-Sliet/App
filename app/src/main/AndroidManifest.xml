@@ -72,10 +72,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!---
         <service
             android:name="com.cycleone.cycleoneapp.services.LocationProvider"
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.ACCESS_BACKGROUND_LOCATION" />
+            -->
     </application>
 </manifest>
