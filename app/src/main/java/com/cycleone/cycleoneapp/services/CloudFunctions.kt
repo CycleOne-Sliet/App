@@ -84,7 +84,7 @@ class CloudFunctions {
                 iv[i] = (Math.random() * 256).toInt().toByte()
                 response[8 + i] = iv[i]
             }
-            val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
+            val cipher = Cipher.getInstance("AES/CBC/NoPadding")
             cipher.init(ENCRYPT_MODE, SecretKeySpec(KEY, "AES"), IvParameterSpec(iv))
             cipher.update(unencryptedResp)
             cipher.doFinal(response, 24)

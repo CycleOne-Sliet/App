@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
@@ -123,12 +122,6 @@ class Home {
             mutableStateOf(MapDisplay())
         }
 
-        mapDisplay.state.addMarker(
-            "TestMarker",
-            0.0, 0.0
-        ) {
-            Icon(Icons.Default.Home, "Current Location")
-        }
         val coroutineScope = rememberCoroutineScope()
 
         Column(
