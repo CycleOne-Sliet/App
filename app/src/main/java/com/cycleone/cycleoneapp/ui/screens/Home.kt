@@ -1,5 +1,9 @@
 package com.cycleone.cycleoneapp.ui.screens
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import android.location.Location
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,7 +21,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -27,28 +33,41 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import androidx.navigation.NavController
 import com.cycleone.cycleoneapp.R
+import com.cycleone.cycleoneapp.services.LocationProvider
 import com.cycleone.cycleoneapp.services.NavProvider
-import com.cycleone.cycleoneapp.services.getStandLocations
 import com.cycleone.cycleoneapp.ui.components.MapDisplay
 import com.cycleone.cycleoneapp.ui.theme.monsterratFamily
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.MultiplePermissionsState
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.android.gms.location.CurrentLocationRequest
+import com.google.android.gms.location.Granularity
+import com.google.android.gms.location.Priority
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
+import ovh.plrapps.mapcompose.api.addMarker
+import ovh.plrapps.mapcompose.api.scrollTo
 
 class Home {
 
     val onViewAll = { NavProvider.controller.navigate("/allLocations") }
 
+    @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     fun Create(
         modifier: Modifier = Modifier,
@@ -58,6 +77,21 @@ class Home {
         var username by remember {
             mutableStateOf("")
         }
+
+        var location: Location? by remember {
+            mutableStateOf(null)
+        }
+
+        if (ActivityCompat.checkSelfPermission(
+                LocalContext.current,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                LocalContext.current,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+
+        }
         if (authInstance != null) {
             val user = authInstance.currentUser
             username = user?.displayName ?: ""
@@ -66,15 +100,36 @@ class Home {
                 navController.navigate("/landing")
             }
         }
+
+        val permissionStates = rememberMultiplePermissionsState(
+            listOf(
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            )
+        )
         UI(modifier, username)
     }
 
+    @SuppressLint("MissingPermission")
+    @OptIn(ExperimentalPermissionsApi::class)
     @Preview
     @Composable
     fun UI(
         modifier: Modifier = Modifier,
         username: String = "Sandeep Kumar",
+        permissionState: MultiplePermissionsState = rememberMultiplePermissionsState(listOf()),
     ) {
+        val mapDisplay by remember {
+            mutableStateOf(MapDisplay())
+        }
+
+        mapDisplay.state.addMarker(
+            "TestMarker",
+            0.0, 0.0
+        ) {
+            Icon(Icons.Default.Home, "Current Location")
+        }
+        val coroutineScope = rememberCoroutineScope()
 
         Column(
             modifier = modifier
@@ -140,21 +195,74 @@ class Home {
                         color = Color.White
                     )
                 }
-
-
                 Column(
                     modifier = Modifier
                         .border(2.dp, Color.White, RoundedCornerShape(10.dp))
                         .background(Color(0xff252322)),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    MapDisplay().Create(
+                    Box(
                         modifier = Modifier
                             .padding(15.dp)
                             .fillMaxWidth()
                             .heightIn(min = 250.dp, max = 300.dp)
-                            .border(2.dp, Color.White, RoundedCornerShape(5.dp))
-                    )
+                            .border(2.dp, Color.White, RoundedCornerShape(5.dp)),
+                    ) {
+                        if (permissionState.allPermissionsGranted) {
+                            LocationProvider.fusedLocationClient.getCurrentLocation(
+                                CurrentLocationRequest.Builder()
+                                    .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                                    .setGranularity(Granularity.GRANULARITY_FINE).build(), null
+                            ).addOnSuccessListener {
+                                if (it != null) {
+                                    Log.d("location", it.toString())
+                                    val location = mapDisplay.locationToNormalizedCoords(it)
+                                    Log.d("normLocation", location.toString())
+                                    coroutineScope.launch {
+                                        mapDisplay.state.scrollTo(
+                                            0.0,
+                                            0.0,
+                                        )
+
+                                        mapDisplay.state.scrollTo(
+                                            location.first,
+                                            location.second,
+                                            0.15f
+                                        )
+                                        mapDisplay.state.addMarker(
+                                            "Current Location",
+                                            location.first,
+                                            location.second
+                                        ) {
+                                            Icon(Icons.Default.Person, "Current Location")
+                                        }
+                                    }
+                                }
+                            }
+                            mapDisplay.Create(
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+
+                            Column {
+                                val textToShow = if (permissionState.shouldShowRationale) {
+                                    "The location permission is required to show current location"
+                                } else {
+                                    "Without these permission, the app cannot function" +
+                                            "Please grant the permissions\n" + "The location will be logged"
+                                }
+                                Text(textToShow)
+                                Button(
+                                    onClick = { permissionState.launchMultiplePermissionRequest() }) {
+                                    Text("Request location permissions")
+                                }
+                            }
+                        }
+
+                    }
+
+
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
@@ -229,7 +337,7 @@ class Home {
                 }
 
                 Button(
-                    onClick = {NavProvider.controller.navigate("/unlock_screen")},
+                    onClick = { NavProvider.controller.navigate("/unlock_screen") },
                     modifier = Modifier
                         .padding(bottom = 15.dp)
                         .fillMaxHeight()

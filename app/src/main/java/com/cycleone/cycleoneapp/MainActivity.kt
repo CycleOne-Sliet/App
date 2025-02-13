@@ -27,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import com.cycleone.cycleoneapp.services.CachedNetworkClient
+import com.cycleone.cycleoneapp.services.LocationProvider
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.NormalBackground
 import com.cycleone.cycleoneapp.ui.screens.AllLocations
@@ -39,6 +40,7 @@ import com.cycleone.cycleoneapp.ui.screens.SignIn
 import com.cycleone.cycleoneapp.ui.screens.SignUp
 import com.cycleone.cycleoneapp.ui.screens.UnlockScreen
 import com.cycleone.cycleoneapp.ui.theme.CycleoneAppTheme
+import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
 
 
@@ -47,6 +49,7 @@ val uri = "cycleone://cycleone.base"
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LocationProvider.fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         CachedNetworkClient.initialize(application)
         setContent {
             CycleoneAppTheme {
