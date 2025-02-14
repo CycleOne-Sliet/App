@@ -9,7 +9,6 @@ import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URI
 import java.nio.charset.Charset
-import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.Cipher.DECRYPT_MODE
 import javax.crypto.Cipher.ENCRYPT_MODE
@@ -25,8 +24,7 @@ class CloudFunctions {
         private const val URL = "https://cycleruncloudrun-313643300650.asia-northeast1.run.app"
 
         @OptIn(ExperimentalEncodingApi::class)
-        private val KEY = MessageDigest.getInstance("SHA256")
-            .digest(Base64.Default.decode("HhcTZuPt3OKSO8doYjYG8Q=="))
+        private val KEY = Base64.Default.decode("HhcTZuPt3OKSO8doYjYG8Q==")
 
 
         suspend fun putToken(standToken: ByteArray) {
