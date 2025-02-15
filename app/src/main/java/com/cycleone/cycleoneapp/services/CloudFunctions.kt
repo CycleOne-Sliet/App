@@ -2,6 +2,7 @@ package com.cycleone.cycleoneapp.services
 
 import android.net.MacAddress
 import android.util.Log
+import com.cycleone.cycleoneapp.ui.screens.decodeHexFromStr
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
@@ -15,16 +16,14 @@ import javax.crypto.Cipher.ENCRYPT_MODE
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.experimental.and
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 
 // Class used to communicate with the backend
 class CloudFunctions {
+    @OptIn(ExperimentalStdlibApi::class)
     companion object {
         private const val URL = "https://cycleruncloudrun-313643300650.asia-northeast1.run.app"
 
-        @OptIn(ExperimentalEncodingApi::class)
-        private val KEY = Base64.Default.decode("HhcTZuPt3OKSO8doYjYG8Q==")
+        private val KEY = decodeHexFromStr("1E171366E3EDDCE2923BC768623606F1")
 
 
         suspend fun putToken(standToken: ByteArray) {
@@ -63,10 +62,12 @@ class CloudFunctions {
         }
 
         fun token(standToken: ByteArray): ByteArray {
+            Log.d("Stand Token", standToken.toHexString(HexFormat.UpperCase))
             val unencryptedResp = ByteArray(16)
             for (i in 0..<8) {
                 unencryptedResp[i] = (Math.random() * 256).toInt().toByte()
             }
+            Log.d("Unencrypted Resp", unencryptedResp.toHexString(HexFormat.UpperCase))
             val standState = decodeResp(standToken)
             if (standState.second) {
                 unencryptedResp[8] = 0
@@ -78,14 +79,24 @@ class CloudFunctions {
                 response[i] = unencryptedResp[i]
             }
             val iv = ByteArray(16)
-            for (i in 0..16) {
+            for (i in 0..<16) {
                 iv[i] = (Math.random() * 256).toInt().toByte()
                 response[8 + i] = iv[i]
             }
+            for (i in 0..<8) {
+                if (response[i] != unencryptedResp[i]) {
+                    Log.d("resp_unen_eq", "${response[i]} - ${unencryptedResp[i]}")
+                }
+            }
+            Log.d("response", response.toHexString(HexFormat.UpperCase))
             val cipher = Cipher.getInstance("AES/CBC/NoPadding")
             cipher.init(ENCRYPT_MODE, SecretKeySpec(KEY, "AES"), IvParameterSpec(iv))
-            cipher.update(unencryptedResp)
-            cipher.doFinal(response, 24)
+            Log.d("unencryptedResp", unencryptedResp.toHexString(HexFormat.UpperCase))
+            val encryptedResp = cipher.doFinal(unencryptedResp)
+            for (i in encryptedResp.indices) {
+                response[24 + i] = encryptedResp[i]
+            }
+            Log.d("response", response.toHexString(HexFormat.UpperCase))
             return response
 
         }
@@ -97,8 +108,11 @@ class CloudFunctions {
             val data = data.copyOfRange(8, 40)
             val iv = data.copyOfRange(0, 16)
             val cipherBytes = data.copyOfRange(16, 32)
-            val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
+            val cipher = Cipher.getInstance("AES/CBC/NoPadding")
             cipher.init(DECRYPT_MODE, SecretKeySpec(KEY, "AES"), IvParameterSpec(iv))
+            Log.d("data", data.toHexString(HexFormat.UpperCase))
+            Log.d("IV", iv.toHexString(HexFormat.UpperCase))
+            Log.d("Cipher Bytes", cipherBytes.toHexString(HexFormat.UpperCase))
             val cipherText = cipher.doFinal(cipherBytes)
             val isStandUnlocked = cipherText[8] and 0x01
             val macAddressBytes = cipherText.copyOfRange(9, 15)
