@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.Button
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +30,7 @@ import androidx.navigation.NavController
 class NavProvider {
     companion object {
         lateinit var controller: NavController
+        lateinit var drawerController: DrawerState
 
         var updateDebugModalView: (Boolean) -> Unit = {}
         var updateDebugModalContent: () -> Unit = {}

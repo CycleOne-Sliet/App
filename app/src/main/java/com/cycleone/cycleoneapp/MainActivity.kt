@@ -33,9 +33,11 @@ import com.cycleone.cycleoneapp.ui.components.NormalBackground
 import com.cycleone.cycleoneapp.ui.screens.AllLocations
 import com.cycleone.cycleoneapp.ui.screens.ForgotPassword
 import com.cycleone.cycleoneapp.ui.screens.Home
+import com.cycleone.cycleoneapp.ui.screens.MyNav
 import com.cycleone.cycleoneapp.ui.screens.Onboarding
 import com.cycleone.cycleoneapp.ui.screens.OtpScreen
 import com.cycleone.cycleoneapp.ui.screens.Profile
+import com.cycleone.cycleoneapp.ui.screens.ProfilePage
 import com.cycleone.cycleoneapp.ui.screens.SignIn
 import com.cycleone.cycleoneapp.ui.screens.SignUp
 import com.cycleone.cycleoneapp.ui.screens.UnlockScreen
@@ -59,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     BaseController()
+
                 }
             }
         }
@@ -156,6 +159,13 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
                 backgroundImage = R.drawable.normal_background
                 AllLocations().Create(modifier)
             }
+            composable("/profilePage") {
+                showTopBar = true
+                showBottomBar = true
+              //  backgroundImage = R.drawable.normal_background
+                ProfilePage().Create(modifier)
+            }
+
         }
     }
 }
@@ -167,32 +177,37 @@ fun MainScaffold(
     backgroundImage: Int? = null,
     content: @Composable (Modifier) -> Unit
 ) {
-    Scaffold(
-        snackbarHost = { NavProvider.debugModal() },
-        floatingActionButton = { NavProvider.debugButton() },
-        topBar = {
-            if (showTopBar) {
-                Button(
-                    onClick = { navController.popBackStack() },
-                    colors = ButtonColors(
-                        Color.Transparent,
-                        Color.White,
-                        Color.Transparent,
-                        Color.Gray
-                    )
-                ) {
-                    Image(painterResource(R.drawable.left_arrow), "Back")
+    MyNav(navController=navController) {
+        Scaffold(
+
+
+            snackbarHost = { NavProvider.debugModal() },
+            floatingActionButton = { NavProvider.debugButton() },
+            topBar = {
+                if (showTopBar) {
+                    Button(
+                        onClick = { navController.popBackStack() },
+                        colors = ButtonColors(
+                            Color.Transparent,
+                            Color.White,
+                            Color.Transparent,
+                            Color.Gray
+                        )
+                    ) {
+                        Image(painterResource(R.drawable.left_arrow), "Back")
+                    }
                 }
+            }) { innerPadding ->
+            if (backgroundImage != null) {
+                NormalBackground(Modifier.padding(innerPadding), backgroundImage = backgroundImage) {
+                    content(Modifier)
+                }
+            } else {
+                content(Modifier.padding(innerPadding))
             }
-        }) { innerPadding ->
-        if (backgroundImage != null) {
-            NormalBackground(Modifier.padding(innerPadding), backgroundImage = backgroundImage) {
-                content(Modifier)
-            }
-        } else {
-            content(Modifier.padding(innerPadding))
         }
     }
+
 }
 
 @Composable

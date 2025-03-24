@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,8 +27,12 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,7 +63,11 @@ import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.Granularity
 import com.google.android.gms.location.Priority
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonNull.content
 import ovh.plrapps.mapcompose.api.addMarker
 import ovh.plrapps.mapcompose.api.scrollTo
 
@@ -106,7 +115,13 @@ class Home {
                 Manifest.permission.ACCESS_FINE_LOCATION,
             )
         )
-        UI(modifier, username)
+     //   val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    //    val scope = rememberCoroutineScope()
+
+
+ UI(modifier, username
+
+    )
     }
 
     @SuppressLint("MissingPermission")
@@ -117,13 +132,13 @@ class Home {
         modifier: Modifier = Modifier,
         username: String = "Sandeep Kumar",
         permissionState: MultiplePermissionsState = rememberMultiplePermissionsState(listOf()),
+
     ) {
         val mapDisplay by remember {
             mutableStateOf(MapDisplay())
         }
 
         val coroutineScope = rememberCoroutineScope()
-
         Column(
             modifier = modifier
                 .fillMaxSize(),
@@ -136,7 +151,9 @@ class Home {
                     .padding(horizontal = 20.dp)
                     .fillMaxWidth()
             ) {
-                Button(enabled = false, onClick = { /*TODO*/ }) {
+                Button(enabled = true, onClick = {  coroutineScope.launch  {  Log.d("Tag", "Clicked menu succcess");
+                    NavProvider.drawerController.open();
+                    Log.d("Tag2", "Clicked menu succcess") }}) {
                     Image(
                         painter = painterResource(R.drawable.menu),
                         "Menu",
