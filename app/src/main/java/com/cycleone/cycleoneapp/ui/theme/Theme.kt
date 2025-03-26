@@ -31,7 +31,6 @@ private val shapes = Shapes(
 fun CycleoneAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = false,
     content: @Composable Function0<Unit>
 ) {
 

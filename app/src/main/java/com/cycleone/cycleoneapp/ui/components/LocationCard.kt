@@ -27,10 +27,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.services.StandLocation
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.launch
@@ -42,7 +40,7 @@ class LocationCard {
         standInfo: StandLocation = StandLocation(
             photoUrl = "https://www.google.com/images/branding/googlelogo/1x/googlelogo_light_color_272x92dp.png",
             location = "Test",
-        ), navigator: NavController = NavProvider.controller, href: String = "/home"
+        ), navigator: NavController, href: String = "/home"
     ) {
 
         var thumbnail: Bitmap? by rememberSaveable(key = standInfo.photoUrl) {
@@ -103,9 +101,4 @@ class LocationCard {
         }
     }
 
-    @Composable
-    @Preview
-    fun Preview() {
-        Create()
-    }
 }

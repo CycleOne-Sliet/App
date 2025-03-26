@@ -32,6 +32,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
         debug {
             isMinifyEnabled = true
@@ -86,6 +87,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     implementation("androidx.compose.ui:ui-text-google-fonts:1.6.2")
     implementation("androidx.compose.material3:material3:1.2.0")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-unit")
     implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
     implementation("io.coil-kt:coil-compose:2.6.0")

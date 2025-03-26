@@ -26,11 +26,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.CloudFunctions
 import com.cycleone.cycleoneapp.services.NavProvider
@@ -70,12 +71,13 @@ class UnlockScreen {
     @Composable
     fun Create(
         modifier: Modifier = Modifier,
+        navController: NavController
     ) {
 
         val user: FirebaseUser? = FirebaseAuth.getInstance().currentUser
         val uid = user?.uid
         if (uid == null) {
-            NavProvider.controller.navigate("/sign_in")
+            navController.navigate("/sign_in")
             return
         }
         var userHasCycle: Boolean? by remember {
@@ -116,6 +118,9 @@ class UnlockScreen {
             user = user,
             onScanSuccess = { qr ->
                 showCamera = false
+                if (!user.isEmailVerified) {
+                    return@UI
+                }
                 if (transactionRunning > 0) {
                     return@UI
                 }
@@ -199,7 +204,7 @@ class UnlockScreen {
                 loadUserData()
             }
         }
-        val lifecycleOwner = LocalLifecycleOwner.current
+        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
         Column(
             modifier = modifier
                 .fillMaxSize()

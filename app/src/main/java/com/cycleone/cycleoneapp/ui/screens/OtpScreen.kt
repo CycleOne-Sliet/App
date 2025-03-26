@@ -14,16 +14,14 @@ import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cycleone.cycleoneapp.services.NavProvider
+import androidx.navigation.NavController
 import com.cycleone.cycleoneapp.ui.components.PrestyledText
 
 class OtpScreen {
     @Composable
-    fun Create(modifier: Modifier = Modifier) {
-        val navController = NavProvider.controller
+    fun Create(modifier: Modifier = Modifier, navController: NavController) {
         Column(
             modifier = modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -71,11 +69,5 @@ class OtpScreen {
                 Text("Verify ❯")
             }
         }
-    }
-
-    @Composable
-    @Preview
-    fun prev() {
-        Create()
     }
 }

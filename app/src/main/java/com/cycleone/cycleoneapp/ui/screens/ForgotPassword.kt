@@ -14,12 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,8 +35,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.startActivity
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.R
-import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.FancyButton
 import com.cycleone.cycleoneapp.ui.components.PrestyledText
 import com.cycleone.cycleoneapp.ui.theme.monsterratFamily
@@ -48,9 +46,9 @@ import com.google.firebase.auth.FirebaseAuth
 
 class ForgotPassword {
     @Composable
-    fun Create(modifier: Modifier) {
+    fun Create(modifier: Modifier, navController: NavController) {
         val context = LocalContext.current
-        UI(modifier = modifier, onForgotPassword = { email ->
+        UI(modifier = modifier, navController, onForgotPassword = { email ->
             FirebaseAuth.getInstance().sendPasswordResetEmail(
                 email,
             ).addOnSuccessListener {
@@ -83,7 +81,11 @@ class ForgotPassword {
 
     @Composable
     @Preview
-    fun UI(modifier: Modifier = Modifier, onForgotPassword: (String) -> Unit = {}) {
+    fun UI(
+        modifier: Modifier = Modifier,
+        navController: NavController = rememberNavController(),
+        onForgotPassword: (String) -> Unit = {}
+    ) {
         val scrollState = rememberScrollState()
         var email by remember {
             mutableStateOf("")
@@ -105,7 +107,8 @@ class ForgotPassword {
                 contentDescription = "Locate"
             )
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Forgot Password?", fontSize = 20.sp,
+                Text(
+                    "Forgot Password?", fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     fontFamily = monsterratFamily,
                     color = Color.White
@@ -125,7 +128,7 @@ class ForgotPassword {
                         .fillMaxWidth(),
                     placeholder = "Enter your Email",
                     onChange = { x -> email = x },
-                    icon = Icons.Outlined.Email
+                    iconVector = Icons.Outlined.Email
                 )
             }
 
@@ -145,7 +148,7 @@ class ForgotPassword {
                         fontFamily = monsterratFamily,
                         color = Color.White
                     )
-                    TextButton(onClick = { NavProvider.controller.navigate("/sign_up") }) {
+                    TextButton(onClick = { navController.navigate("/sign_up") }) {
                         Text("Sign Up Now", color = Color(0xffff6b35))
                     }
                 }

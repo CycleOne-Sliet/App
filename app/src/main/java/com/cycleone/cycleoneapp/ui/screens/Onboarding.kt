@@ -32,21 +32,26 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.R
-import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.services.OnboardingContent
 import com.cycleone.cycleoneapp.ui.components.FancyButton
 import com.cycleone.cycleoneapp.ui.theme.monsterratFamily
 
 class Onboarding {
     @Composable
-    fun Create(modifier: Modifier) {
-        UI(modifier)
+    fun Create(modifier: Modifier, navController: NavController) {
+        UI(modifier, navController = navController)
     }
 
     @Preview
     @Composable
-    fun UI(modifier: Modifier = Modifier, content: List<OnboardingContent> = OnboardingContent.default_content()) {
+    fun UI(
+        modifier: Modifier = Modifier,
+        content: List<OnboardingContent> = OnboardingContent.default_content(),
+        navController: NavController = rememberNavController()
+    ) {
         var indexShown by remember {
             mutableStateOf(0)
         }
@@ -149,12 +154,12 @@ class Onboarding {
                         modifier = Modifier.fillMaxWidth(0.6F),
                         onClick = {
                             if (indexShown >= content.size - 1)
-                                NavProvider.controller.navigate("/sign_up")
+                                navController.navigate("/sign_up")
                             else indexShown += 1
-                            }, text = if (indexShown >= content.size - 1)
-                                    "GET STARTED"
-                                else
-                                    "NEXT"
+                        }, text = if (indexShown >= content.size - 1)
+                            "GET STARTED"
+                        else
+                            "NEXT"
 
                     )
                 }

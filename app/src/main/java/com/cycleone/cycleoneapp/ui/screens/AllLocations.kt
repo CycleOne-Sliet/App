@@ -22,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.cycleone.cycleoneapp.services.NavProvider
+import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.services.StandLocation
 import com.cycleone.cycleoneapp.services.getStandLocations
 import com.cycleone.cycleoneapp.ui.components.LocationCard
@@ -32,7 +32,7 @@ class AllLocations {
     @Composable
     fun Create(
         modifier: Modifier = Modifier,
-        navController: NavController = NavProvider.controller
+        navController: NavController
     ) {
         val user = FirebaseAuth.getInstance().currentUser
         Log.d("User", user.toString())
@@ -53,7 +53,7 @@ class AllLocations {
     @Composable
     fun UI(
         modifier: Modifier = Modifier,
-        navController: NavController = NavProvider.controller,
+        navController: NavController = rememberNavController(),
         locations: List<StandLocation> = listOf(StandLocation("hfewo", "kjfr"))
     ) {
         val topScrollable = ScrollableState { x -> x }

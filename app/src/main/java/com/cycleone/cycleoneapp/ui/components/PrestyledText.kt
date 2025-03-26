@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.twotone.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,7 +43,11 @@ class PrestyledText {
         onChange: (String) -> Unit = {},
         enabled: Boolean = true,
         isPassword: Boolean = false,
-        icon: ImageVector? = null,
+        iconVector: ImageVector? = null,
+        icon: @Composable () -> Unit = {
+            iconVector?.let {
+                Icon(it, "Icon", tint = Color.White)
+            } }
     ) {
         var c by remember { mutableStateOf("") }
         TextField(
@@ -75,11 +78,8 @@ class PrestyledText {
                 fontFamily = monsterratFamily,
                 color = Color.White
             ),
-            trailingIcon = {
-                icon?.let {
-                    Icon(it, "Icon", tint = Color.White)
-                }
-            })
+            trailingIcon = icon
+            )
     }
 
     @Composable
@@ -133,8 +133,21 @@ class PrestyledText {
     @Preview
     fun prev() {
         Column {
-            Regular(modifier  = Modifier, placeholder = "Preview", onChange = {}, enabled = true,  icon = Icons.Default.Build)
-            Regular(modifier  = Modifier, placeholder = "Password", onChange = {}, enabled = true,  icon = Icons.Default.Build, isPassword = true)
+            Regular(
+                modifier = Modifier,
+                placeholder = "Preview",
+                onChange = {},
+                enabled = true,
+                iconVector = Icons.Default.Build
+            )
+            Regular(
+                modifier = Modifier,
+                placeholder = "Password",
+                onChange = {},
+                enabled = true,
+                iconVector = Icons.Default.Build,
+                isPassword = true
+            )
             OTP()
         }
     }

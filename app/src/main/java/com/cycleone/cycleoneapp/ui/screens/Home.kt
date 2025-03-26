@@ -3,7 +3,6 @@ package com.cycleone.cycleoneapp.ui.screens
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.location.Location
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -46,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.LocationProvider
 import com.cycleone.cycleoneapp.services.NavProvider
@@ -64,21 +64,16 @@ import ovh.plrapps.mapcompose.api.scrollTo
 
 class Home {
 
-    val onViewAll = { NavProvider.controller.navigate("/allLocations") }
 
     @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     fun Create(
         modifier: Modifier = Modifier,
         authInstance: FirebaseAuth? = FirebaseAuth.getInstance(),
-        navController: NavController = NavProvider.controller
+        navController: NavController
     ) {
         var username by remember {
             mutableStateOf("")
-        }
-
-        var location: Location? by remember {
-            mutableStateOf(null)
         }
 
         if (ActivityCompat.checkSelfPermission(
@@ -96,7 +91,7 @@ class Home {
             username = user?.displayName ?: ""
             Log.d("User", user.toString())
             if (user == null) {
-                navController.navigate("/landing")
+                navController.navigate("/sign_in")
             }
         }
 
@@ -106,7 +101,7 @@ class Home {
                 Manifest.permission.ACCESS_FINE_LOCATION,
             )
         )
-        UI(modifier, username)
+        UI(modifier, username, permissionStates, navController = navController)
     }
 
     @SuppressLint("MissingPermission")
@@ -117,6 +112,7 @@ class Home {
         modifier: Modifier = Modifier,
         username: String = "Sandeep Kumar",
         permissionState: MultiplePermissionsState = rememberMultiplePermissionsState(listOf()),
+        navController: NavController = rememberNavController()
     ) {
         val mapDisplay by remember {
             mutableStateOf(MapDisplay())
@@ -136,7 +132,22 @@ class Home {
                     .padding(horizontal = 20.dp)
                     .fillMaxWidth()
             ) {
-                Button(enabled = false, onClick = { /*TODO*/ }) {
+                Button(
+                    enabled = true,
+                    onClick = {
+                        Log.d("coroutine", "Launched NavProvider Coroutine")
+                        coroutineScope.launch {
+                            Log.d("drawer", "Launched drawer open Coroutine")
+                            if (NavProvider.drawer == null) {
+                                Log.d("drawer", "Drawer is null")
+                            } else {
+                                Log.d("drawer", "Drawer is not null")
+                            }
+                            NavProvider.drawer!!.open()
+                            Log.d("coroutine", "Launched completed drawer open Coroutine")
+                        }
+                        Log.d("coroutine", "Launched completed NavProvider Coroutine")
+                    }) {
                     Image(
                         painter = painterResource(R.drawable.menu),
                         "Menu",
@@ -330,7 +341,7 @@ class Home {
                 }
 
                 Button(
-                    onClick = { NavProvider.controller.navigate("/unlock_screen") },
+                    onClick = { navController.navigate("/unlock_screen") },
                     modifier = Modifier
                         .padding(bottom = 15.dp)
                         .fillMaxHeight()

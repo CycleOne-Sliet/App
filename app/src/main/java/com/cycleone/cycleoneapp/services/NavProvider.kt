@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.Button
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,13 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.navigation.NavController
 
 // Uitility class to make managing navigation easier
 // Allows for getting the NavController without having to pass it in
 class NavProvider {
     companion object {
-        lateinit var controller: NavController
+        var drawer: DrawerState? = null
 
         var updateDebugModalView: (Boolean) -> Unit = {}
         var updateDebugModalContent: () -> Unit = {}

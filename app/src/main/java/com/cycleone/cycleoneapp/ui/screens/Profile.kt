@@ -2,16 +2,16 @@ package com.cycleone.cycleoneapp.ui.screens
 
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
@@ -30,39 +30,26 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.cycleone.cycleoneapp.services.NavProvider
+import com.cycleone.cycleoneapp.ui.components.FancyButton
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.firestore
-import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 
 const val PICK_PDF_FILE = 2
 
 class Profile {
     @Composable
-    fun Create(modifier: Modifier = Modifier) {
+    fun Create(modifier: Modifier = Modifier, navController : NavController) {
         val context = LocalContext.current
         val user = FirebaseAuth.getInstance().currentUser
-        val pickFileLauncher =
-            user?.uid?.let {
-                rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { FileUri ->
-                    val profilePhotoRef =
-                        FirebaseStorage.getInstance().reference.child("userImages").child(it)
-                    Log.d("Profile", "Profile Name: ${profilePhotoRef.name}")
-                    FileUri?.let { profilePhotoRef.putFile(it) }
-                    profilePhotoRef.downloadUrl.addOnSuccessListener {
-                        user.updateProfile(
-                            UserProfileChangeRequest.Builder()
-                                .setPhotoUri(it).build()
-                        )
-                    }
-                }
-            }
         var userHasCycle: Boolean? by remember {
             mutableStateOf(
                 null
@@ -72,13 +59,11 @@ class Profile {
             mutableStateOf(null)
         }
 
-        UI(modifier, user, userHasCycle, userCycleId, loadUserData = {
+        UI(modifier, user, userHasCycle, userCycleId, navController = navController, loadUserData = {
             val userData =
                 Firebase.firestore.collection("users").document(user?.uid!!).get().await()
             userHasCycle = userData.data?.get("HasCycle") as Boolean?
             userCycleId = userData.data?.get("CycleOccupied") as Long?
-        }, onPhotoChangeRequest = {
-            pickFileLauncher?.launch("*/*")
         }, onVerificationRequested = {
             user?.reload()
             user?.sendEmailVerification()
@@ -112,17 +97,16 @@ class Profile {
         userHasCycle: Boolean? = null,
         userCycleId: Long? = null,
         loadUserData: suspend () -> Unit = {},
-        onPhotoChangeRequest: () -> Unit = {},
-        onVerificationRequested: () -> Unit = {}
+        onVerificationRequested: () -> Unit = {},
+        navController: NavController = rememberNavController()
     ) {
-
         var loadedUserData by remember {
             mutableStateOf(false)
         }
         LaunchedEffect(loadUserData) {
             if (!loadedUserData) {
-                loadedUserData = true
                 loadUserData()
+                loadedUserData = true
             }
         }
         Column(
@@ -130,26 +114,26 @@ class Profile {
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
-
         ) {
-
             Log.d("Profile", user?.photoUrl.toString())
-
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current).data(user?.photoUrl)
-                    .build(),
-                contentDescription = "Profile Photo",
-                fallback = rememberVectorPainter(Icons.Default.Person),
-                placeholder = rememberVectorPainter(Icons.Default.Person),
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.3F)
-                    .clickable {
-                        onPhotoChangeRequest()
-                    },
-                alignment = Alignment.Center,
-                contentScale = ContentScale.FillWidth
-
-            )
+                    .width(256.dp)
+                    .height(256.dp)
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current).data(user?.photoUrl)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .build(),
+                    contentDescription = "Profile Photo",
+                    fallback = rememberVectorPainter(Icons.Default.Person),
+                    placeholder = rememberVectorPainter(Icons.Default.Person),
+                    modifier = Modifier
+                        .fillMaxWidth(0.3F),
+                    alignment = Alignment.Center,
+                    contentScale = ContentScale.FillWidth
+                )
+            }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -180,12 +164,13 @@ class Profile {
                 } else {
                     Text("You currently have no cycle allocated")
                 }
-                Button(onClick = {
+                FancyButton(onClick = {
+                    navController.navigate("/edit_profile")
+                }, text = "Edit Profile")
+                FancyButton(onClick = {
                     FirebaseAuth.getInstance().signOut()
                     NavProvider.addLogEntry("Signed Out")
-                }) {
-                    Text("Logout")
-                }
+                }, text = "Logout")
             }
         }
     }
