@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.text.TextUtils
 import android.util.Log
+import android.util.Patterns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -54,8 +56,8 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.NavProvider
-import com.cycleone.cycleoneapp.ui.components.UpdateProfile
-import com.google.firebase.firestore.CollectionReference
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 
 class ProfilePage {
@@ -63,9 +65,16 @@ class ProfilePage {
     fun Create(modifier: Modifier = Modifier) {
         ProfileScreen( NavProvider.controller, context = LocalContext.current)
     }
+    fun String.isValidEmail(): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(this).matches()
+    }
     @Composable
     fun ProfileScreen(navController: NavController = rememberNavController(),
-                      context:Context
+                     context:Context,
+                  //    modifier: Modifier = Modifier,
+                  //    user: FirebaseUser? = null,
+                 //     loadUserData: suspend () -> Unit = {},
+                  //    onPhotoChangeRequest: () -> Unit = {}
 
                      // onPhotoChangeRequest: () -> Unit = {}
         ) {
@@ -76,6 +85,10 @@ class ProfilePage {
         var year = remember { mutableStateOf(TextFieldValue("")) }
         val context = LocalContext.current
         val imageUri = remember { mutableStateOf<Uri?>(null) }
+       // val auth = FirebaseAuth.getInstance()
+        val db = FirebaseFirestore.getInstance()
+        var emailError = remember { mutableStateOf<String?>(null) }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -117,7 +130,11 @@ class ProfilePage {
             CustomTextField(
                 label = "Email",
                 value = email.value,
-                onValueChange = { newValue -> email.value = newValue })
+                onValueChange = {
+                        newValue -> email.value = newValue
+
+                   }
+       )
             Spacer(modifier = Modifier.height(25.dp))
             CustomTextField(
                 label = "Phone No",
@@ -136,36 +153,22 @@ class ProfilePage {
             Spacer(modifier = Modifier.height(30.dp))
             Button(
                 onClick = {
-                    // on below line we are validating user input parameters.
-                    if (TextUtils.isEmpty(name.value.toString())) {
-                        Toast.makeText(context, "Please enter name", Toast.LENGTH_SHORT).show()
-                    } else if (TextUtils.isEmpty(email.value.toString())) {
-                        Toast.makeText(context, "Please enter email", Toast.LENGTH_SHORT)
-                            .show()
-                    } else if (TextUtils.isEmpty(phone.value.toString())) {
-                        Toast.makeText(context, "Please enter phone no", Toast.LENGTH_SHORT)
-                            .show()
-                    }
-                    else if (TextUtils.isEmpty(branch.value.toString())) {
-                        Toast.makeText(context, "Please enter branch", Toast.LENGTH_SHORT)
-                            .show()
-                    }
-                    else if (TextUtils.isEmpty(year.value.toString())) {
-                        Toast.makeText(context, "Please enter year", Toast.LENGTH_SHORT)
-                            .show()
-                    }
-                    else {
-                        // on below line adding data to
-                        // firebase firestore database.
-                        addDataToFirebase(
-                            name.value.toString(),
-                            email.value.toString(),
-                            phone.value.toString(),
-                            branch.value.toString(),
-                            year.value.toString(),
-                            context
-                        )
-                    }
+
+onClickButton(context ,
+
+    email = email.value.text,
+    name = name.value.text,
+    phone = phone.value.text,
+    branch = branch.value.text,
+    year = year.value.text
+
+
+    )
+                    Log.d("Tag","Text is ${email}")
+                    Log.d("Tag","Text is ${name}")
+                    Log.d("Tag","Text is ${phone}")
+                    Log.d("Tag","Text is ${branch}")
+                    Log.d("Tag","Text is ${year}")
 
                 },
                 modifier = Modifier
@@ -240,6 +243,7 @@ class ProfilePage {
     fun CustomTextField(
         label: String,
         value: TextFieldValue,
+
         onValueChange: (TextFieldValue) -> Unit
     ) {
 
@@ -259,37 +263,78 @@ class ProfilePage {
         )
 
     }
-
-    fun addDataToFirebase(
-        name: String,
+    fun onClickButton(
+        context: Context,
         email: String,
+        name: String,
         phone: String,
         branch: String,
-        year: String,
-        context: Context
+        year: String
     ) {
-
-        val db: FirebaseFirestore = FirebaseFirestore.getInstance()
-
-        val dbProfile: CollectionReference = db.collection("Profiles")
-
-        val UpdatedProfile = UpdateProfile(name,email,phone,branch,year)
-
-
-        dbProfile.add(UpdatedProfile).addOnSuccessListener {
-
-            Toast.makeText(
-                context,
-                "Your Profile has been Updated",
-                Toast.LENGTH_SHORT
-            ).show()
-
-        }.addOnFailureListener { e ->
-
-            Toast.makeText(context, "Fail to Update \n$e", Toast.LENGTH_SHORT).show()
+        if (!email.isValidEmail()) {
+            Toast.makeText(context, "Invalid E-Mail ID", Toast.LENGTH_LONG).show()
+            return
         }
 
+        val db = FirebaseFirestore.getInstance()
+        val auth = FirebaseAuth.getInstance()
+
+        auth.createUserWithEmailAndPassword(email,phone)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val user = auth.currentUser
+
+                    val profileUpdates = UserProfileChangeRequest.Builder()
+                        .setDisplayName(name)
+                        .build()
+
+                    user?.updateProfile(profileUpdates)
+                        ?.addOnCompleteListener { profileTask ->
+                            if (profileTask.isSuccessful) {
+
+                                val userData = hashMapOf(
+                                    "uid" to user.uid,
+                                    "email" to email,
+                                    "name" to name,
+                                    "phone" to phone,
+                                    "branch" to branch,
+                                    "year" to year
+                                )
+
+                                db.collection("users").document(user.uid)
+                                    .set(userData)
+                                    .addOnSuccessListener {
+                                        Toast.makeText(
+                                            context.applicationContext,
+                                            "Registration successful",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(
+                                            context.applicationContext,
+                                            "Error saving user data: ${e.message}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                            } else {
+                                Toast.makeText(
+                                    context.applicationContext,
+                                    "Profile update failed: ${profileTask.exception?.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                } else {
+                    Toast.makeText(
+                        context.applicationContext,
+                        "Registration failed: ${task.exception?.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
     }
+
 }
 
 /*@Preview(showBackground = true)
