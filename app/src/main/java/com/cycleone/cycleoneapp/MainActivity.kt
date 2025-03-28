@@ -193,7 +193,7 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
 }
 
 val drawerPaths =
-    listOf(DrawerPath("My Profile", "/profile"), DrawerPath("History", "/history"))
+    listOf(DrawerPath("My Profile", "/profile"))
 
 
 @Composable

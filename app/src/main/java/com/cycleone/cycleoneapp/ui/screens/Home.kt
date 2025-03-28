@@ -274,6 +274,7 @@ class Home {
                             .padding(15.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
+                        /*
                         Column {
                             Text(
                                 "Distance",
@@ -306,6 +307,7 @@ class Home {
                                 fontSize = 24.sp
                             )
                         }
+                        */
                     }
                 }
             }
