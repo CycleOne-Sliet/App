@@ -29,46 +29,8 @@ fun FancyButton(
     modifier: Modifier = Modifier,
     onClick: suspend () -> Unit = {},
     text: String = "NEXT",
-    enabled: Boolean = true
-) {
-    var errorText: String? by remember {
-        mutableStateOf(null)
-    }
-    var loading by remember {
-        mutableStateOf(false)
-    }
-    val coroutineScope = rememberCoroutineScope()
-    Button(
-        onClick = {
-            val job = coroutineScope.launch(CoroutineExceptionHandler { _, throwable ->
-                Log.e("FancyBtnExceptionMsg", throwable.message.toString())
-                Log.e("FancyBtnExceptionCause", throwable.cause.toString())
-                Log.e("FancyBtnExceptionTrace", throwable.stackTraceToString())
-                errorText = throwable.message
-            }) {
-                loading = true
-                try {
-                    onClick()
-                } catch (throwable: Error) {
-                    errorText = throwable.message
-                    Log.e("FancyBtnExceptionMsgCatch", throwable.message.toString())
-                    Log.e("FancyBtnExceptionCauseCatch", throwable.cause.toString())
-                    Log.e("FancyBtnExceptionTraceCatch", throwable.stackTraceToString())
-                }
-                loading = false
-            }
-        },
-        modifier = modifier,
-        enabled = enabled,
-        colors = ButtonColors(
-            containerColor = Color.Black,
-            contentColor = Color(0xffff6b35),
-            disabledContentColor = Color.Red,
-            disabledContainerColor = Color.Gray
-        ),
-        shape = RoundedCornerShape(5.dp),
-        border = BorderStroke(1.dp, if (enabled) Color(0xffff6b35) else Color.Red)
-    ) {
+    enabled: Boolean = true,
+    content: @Composable (Boolean) -> Unit = { loading ->
         if (loading) {
             CircularProgressIndicator()
         } else {
@@ -79,6 +41,47 @@ fun FancyButton(
                 fontFamily = monsterratFamily
             )
         }
+    }
+) {
+    var errorText: String? by remember {
+        mutableStateOf(null)
+    }
+    var loading by remember {
+        mutableStateOf(false)
+    }
+    val coroutineScope = rememberCoroutineScope()
+    Button(
+        onClick = {
+            coroutineScope.launch(CoroutineExceptionHandler { _, throwable ->
+                Log.e("FancyBtnExceptionMsg", throwable.message.toString())
+                Log.e("FancyBtnExceptionCause", throwable.cause.toString())
+                Log.e("FancyBtnExceptionTrace", throwable.stackTraceToString())
+                errorText = throwable.message
+            }) {
+                loading = true
+                try {
+                    onClick()
+                } catch (throwable: Throwable) {
+                    errorText = throwable.message
+                    Log.e("FancyBtnExceptionMsgCatch", throwable.message.toString())
+                    Log.e("FancyBtnExceptionCauseCatch", throwable.cause.toString())
+                    Log.e("FancyBtnExceptionTraceCatch", throwable.stackTraceToString())
+                }
+                loading = false
+            }
+        },
+        modifier = modifier,
+        enabled = (enabled && !loading),
+        colors = ButtonColors(
+            containerColor = Color.Black,
+            contentColor = Color(0xffff6b35),
+            disabledContentColor = Color.Red,
+            disabledContainerColor = Color.Gray
+        ),
+        shape = RoundedCornerShape(5.dp),
+        border = BorderStroke(1.dp, if (enabled) Color(0xffff6b35) else Color.Red)
+    ) {
+        content(loading)
     }
     errorText?.let { error ->
         Text(error, color = Color.Red)

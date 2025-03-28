@@ -23,9 +23,9 @@ class MapDisplay {
     private val tileStreamProvider = TileStreamProvider { row, col, zoomLvl ->
         try {
             return@TileStreamProvider CachedNetworkClient.get("https://tile.openstreetmap.org/$zoomLvl/$col/$row.png").body?.byteStream()
-        } catch (e: Error) {
+        } catch (e: Throwable) {
             Log.e("tileStreamProvider", e.toString())
-            null
+            return@TileStreamProvider null
         }
     }
 

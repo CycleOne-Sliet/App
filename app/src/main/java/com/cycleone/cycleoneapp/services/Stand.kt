@@ -23,14 +23,14 @@ import androidx.core.content.ContextCompat.startActivity
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.squareup.moshi.FromJson
-import com.squareup.moshi.Moshi
 import com.squareup.moshi.ToJson
-import com.squareup.moshi.adapter
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import okio.ByteString.Companion.readByteString
 import java.io.ByteArrayOutputStream
 import java.lang.reflect.Method
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 
 // Class representing the various commands that can be sent to the Stand
@@ -135,12 +135,6 @@ class Stand : Application() {
         lateinit var connectivityManager: ConnectivityManager
         lateinit var networkCallback: NetworkCallback
 
-        @Volatile
-        var IsConnected = false
-        val parser = Moshi.Builder().add(ResponseAdapter())
-            .add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
-            .adapter<Response>()
-
         // Disconnecting from the stand
         // Should be called as soon as the exchange between stand and mobile has occurred
         // Frees up the wifi
@@ -180,14 +174,10 @@ class Stand : Application() {
 
 
         // Connects to the stand over the mac address
-        fun connect(
+        suspend fun connect(
             mac: MacAddress,
             context: Context,
-            onUnavailable: () -> Unit,
-            onLost: () -> Unit,
-            onBlocked: () -> Unit,
-            onConnect: suspend (Network) -> Unit,
-        ) {
+        ): Network? {
             // Used to configure the wifi network
             // We are setting the Ssid to CycleOneS1
             // Password to CycleOne and mac address to whatever that was passed in
@@ -216,86 +206,83 @@ class Stand : Application() {
                     NET_CAPABILITY_INTERNET
                 ).build()
             // Callbacks for when network state changes
-            networkCallback = object : NetworkCallback() {
-                // When network becomes available, call the onConnect function, and then disconnect
-                override fun onAvailable(network: Network) {
-                    super.onAvailable(network)
-                    if (IsConnected) {
-                        return
-                    }
-                    IsConnected = true
-                    runBlocking {
-                        onConnect(network)
-                    }
-                    IsConnected = false
-                }
+            return suspendCoroutine { cont ->
+                networkCallback =
+                    object : NetworkCallback() {
+                        // When network becomes available, call the onConnect function, and then disconnect
+                        override fun onAvailable(network: Network) {
+                            super.onAvailable(network)
+                            cont.resume(network)
+                        }
 
-                override fun onUnavailable() {
-                    super.onUnavailable()
-                    onUnavailable()
-                    Log.e("Unavailable", "Network is not found")
-                    if (isHotspotActive(context)) {
-                        Toast.makeText(
-                            appContext,
-                            "Having hotspot active can lead to issues with connection, please turn hotspot off",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        val intent = Intent(Intent.ACTION_MAIN, null)
-                        intent.addCategory(Intent.CATEGORY_LAUNCHER)
-                        val cn = ComponentName(
-                            "com.android.settings",
-                            "com.android.settings.TetherSettings"
-                        )
-                        intent.setComponent(cn)
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        startActivity(context, intent, null)
-                    } else if (isBluetoothActive(context)) {
-                        Toast.makeText(
-                            appContext,
-                            "Having Bluetooth on can cause connection problems, please turn it off",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        val intent =
-                            Intent("android.bluetooth.adapter.action.REQUEST_DISABLE")
-                        startActivity(context, intent, null)
-                    }
-                    Toast.makeText(
-                        appContext,
-                        "Could not connect to stand",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+                        override fun onUnavailable() {
+                            super.onUnavailable()
+                            onUnavailable()
+                            Log.e("Unavailable", "Network is not found")
+                            if (isHotspotActive(context)) {
+                                Toast.makeText(
+                                    appContext,
+                                    "Having hotspot active can lead to issues with connection, please turn hotspot off",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                val intent = Intent(Intent.ACTION_MAIN, null)
+                                intent.addCategory(Intent.CATEGORY_LAUNCHER)
+                                val cn = ComponentName(
+                                    "com.android.settings",
+                                    "com.android.settings.TetherSettings"
+                                )
+                                intent.setComponent(cn)
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                startActivity(context, intent, null)
+                            } else if (isBluetoothActive(context)) {
+                                Toast.makeText(
+                                    appContext,
+                                    "Having Bluetooth on can cause connection problems, please turn it off",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                val intent =
+                                    Intent("android.bluetooth.adapter.action.REQUEST_DISABLE")
+                                startActivity(context, intent, null)
+                            }
+                            Toast.makeText(
+                                appContext,
+                                "Could not connect to stand",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            cont.resume(null)
+                        }
 
-                override fun onLost(network: Network) {
-                    super.onLost(network)
-                    onLost()
-                    Toast.makeText(
-                        appContext,
-                        "Stand WiFi connection lost",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+                        override fun onLost(network: Network) {
+                            super.onLost(network)
+                            Toast.makeText(
+                                appContext,
+                                "Stand WiFi connection lost",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            cont.resume(null)
+                        }
 
 
-                // Called when the Wifi is Blocked, We send the user to Settings to unblock it
-                override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
-                    super.onBlockedStatusChanged(network, blocked)
-                    if (blocked) {
-                        onBlocked()
-                        Log.e("Unavailable", "Network is Blocked")
-                        Toast.makeText(
-                            appContext,
-                            "WiFi is Blocked, Please Enable it in settings",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        // Called when the Wifi is Blocked, We send the user to Settings to unblock it
+                        override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
+                            super.onBlockedStatusChanged(network, blocked)
+                            if (blocked) {
+                                Log.e("Unavailable", "Network is Blocked")
+                                Toast.makeText(
+                                    appContext,
+                                    "WiFi is Blocked, Please Enable it in settings",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                            cont.resume(null)
+                        }
                     }
-                }
+                // Request android to provide the network as configured
+                connectivityManager.requestNetwork(
+                    networkRequest,
+                    networkCallback, 30000
+                )
             }
-            // Request android to provide the network as configured
-            connectivityManager.requestNetwork(
-                networkRequest,
-                networkCallback, 30000
-            )
         }
 
         fun trigger(

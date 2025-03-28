@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,7 +46,7 @@ const val PICK_PDF_FILE = 2
 
 class Profile {
     @Composable
-    fun Create(modifier: Modifier = Modifier, navController : NavController) {
+    fun Create(modifier: Modifier = Modifier, navController: NavController) {
         val context = LocalContext.current
         val user = FirebaseAuth.getInstance().currentUser
         var userHasCycle: Boolean? by remember {
@@ -59,34 +58,41 @@ class Profile {
             mutableStateOf(null)
         }
 
-        UI(modifier, user, userHasCycle, userCycleId, navController = navController, loadUserData = {
-            val userData =
-                Firebase.firestore.collection("users").document(user?.uid!!).get().await()
-            userHasCycle = userData.data?.get("HasCycle") as Boolean?
-            userCycleId = userData.data?.get("CycleOccupied") as Long?
-        }, onVerificationRequested = {
-            user?.reload()
-            user?.sendEmailVerification()
-                ?.addOnSuccessListener {
-                    Toast.makeText(
-                        context,
-                        "Verification Email sent",
-                        Toast.LENGTH_LONG
-                    ).show()
+        UI(
+            modifier,
+            user,
+            userHasCycle,
+            userCycleId,
+            navController = navController,
+            loadUserData = {
+                val userData =
+                    Firebase.firestore.collection("users").document(user?.uid!!).get().await()
+                userHasCycle = userData.data?.get("HasCycle") as Boolean?
+                userCycleId = userData.data?.get("CycleOccupied") as Long?
+            },
+            onVerificationRequested = {
+                user?.reload()
+                user?.sendEmailVerification()
+                    ?.addOnSuccessListener {
+                        Toast.makeText(
+                            context,
+                            "Verification Email sent",
+                            Toast.LENGTH_LONG
+                        ).show()
 
-                    Toast.makeText(
-                        context,
-                        "Check your email",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }?.addOnFailureListener {
-                    Toast.makeText(
-                        context,
-                        "Unable to send verification email",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-        })
+                        Toast.makeText(
+                            context,
+                            "Check your email",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }?.addOnFailureListener {
+                        Toast.makeText(
+                            context,
+                            "Unable to send verification email",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+            })
     }
 
     @Composable
@@ -119,7 +125,8 @@ class Profile {
             Box(
                 modifier = Modifier
                     .width(256.dp)
-                    .height(256.dp)
+                    .height(256.dp),
+                contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current).data(user?.photoUrl)
@@ -129,7 +136,7 @@ class Profile {
                     fallback = rememberVectorPainter(Icons.Default.Person),
                     placeholder = rememberVectorPainter(Icons.Default.Person),
                     modifier = Modifier
-                        .fillMaxWidth(0.3F),
+                        .fillMaxWidth(),
                     alignment = Alignment.Center,
                     contentScale = ContentScale.FillWidth
                 )
@@ -139,7 +146,7 @@ class Profile {
                     .fillMaxWidth()
                     .fillMaxHeight(0.90F)
                     .background(
-                        MaterialTheme.colorScheme.inversePrimary,
+                        MaterialTheme.colorScheme.surface,
                     )
                     .padding(top = 50.dp, start = 10.dp, end = 10.dp),
             )
@@ -147,30 +154,34 @@ class Profile {
                 user?.displayName?.let {
                     Text(it)
                 }
-                Text("Email: ")
                 user?.email?.let {
-                    Text(it)
+                    Text("Email: $it")
                 }
                 if (user?.isEmailVerified != true) {
-                    Button(
-                        modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
-                        onClick = onVerificationRequested
-                    ) {
-                        Text("Verify Email")
-                    }
+                    FancyButton(
+                        text = "Verify E-Mail",
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { onVerificationRequested() }
+                    )
                 }
                 if (userHasCycle == true) {
-                    Text("You currently have a cycle with id: ${userCycleId}")
+                    Text("You currently have a cycle with id: $userCycleId")
                 } else {
                     Text("You currently have no cycle allocated")
                 }
-                FancyButton(onClick = {
-                    navController.navigate("/edit_profile")
-                }, text = "Edit Profile")
-                FancyButton(onClick = {
-                    FirebaseAuth.getInstance().signOut()
-                    NavProvider.addLogEntry("Signed Out")
-                }, text = "Logout")
+                FancyButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        navController.navigate("/edit_profile")
+                    }, text = "Edit Profile"
+                )
+                FancyButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        FirebaseAuth.getInstance().signOut()
+                        NavProvider.addLogEntry("Signed Out")
+                    }, text = "Logout"
+                )
             }
         }
     }

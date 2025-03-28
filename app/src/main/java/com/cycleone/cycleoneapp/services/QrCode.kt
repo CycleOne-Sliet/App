@@ -8,13 +8,24 @@ import androidx.camera.mlkit.vision.MlKitAnalyzer
 import androidx.camera.view.CameraController.COORDINATE_SYSTEM_VIEW_REFERENCED
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -29,11 +40,26 @@ class QrCode : Application() {
         @Volatile
         var qrScanned = 0
 
+        @OptIn(ExperimentalMaterial3Api::class)
         @Composable
-        fun startCamera(onSuccess: suspend (String) -> Unit, lifecycleOwner: LifecycleOwner) {
+        fun startCamera(
+            onSuccess: suspend (String) -> Unit,
+            lifecycleOwner: LifecycleOwner,
+        ) {
             // AndroidView Necessary because Compose does not allow for streaming data from camera
             // and displaying it easily
-            AndroidView(factory = { context ->
+            val coroutineScope = rememberCoroutineScope()
+            var errorText: String? by remember {
+                mutableStateOf(null)
+            }
+            if (errorText != null) {
+                BasicAlertDialog(onDismissRequest = {
+                    errorText = null
+                }) {
+                    Text("Error: $errorText")
+                }
+            }
+            AndroidView(modifier = Modifier.fillMaxSize(0.75F), factory = { context ->
                 // Controls when the camera is being used
                 val cameraController = LifecycleCameraController(context)
                 // Options for the code scanner
@@ -68,9 +94,36 @@ class QrCode : Application() {
                                 qrScanned++
                                 CoroutineScope(Dispatchers.Main).launch {
                                     NavProvider.showDebugModal()
-                                    onSuccess(it)
-                                    delay(1000L)
-                                    qrScanned--
+                                    coroutineScope.launch(CoroutineExceptionHandler { _, throwable ->
+                                        Log.e("FancyBtnExceptionMsg", throwable.message.toString())
+                                        Log.e("FancyBtnExceptionCause", throwable.cause.toString())
+                                        Log.e(
+                                            "FancyBtnExceptionTrace",
+                                            throwable.stackTraceToString()
+                                        )
+                                        errorText = throwable.message
+                                    }) {
+                                        try {
+                                            onSuccess(it)
+                                            delay(1000L)
+                                            errorText = null
+                                            qrScanned--
+                                        } catch (throwable: Throwable) {
+                                            errorText = throwable.message
+                                            Log.e(
+                                                "FancyBtnExceptionMsgCatch",
+                                                throwable.message.toString()
+                                            )
+                                            Log.e(
+                                                "FancyBtnExceptionCauseCatch",
+                                                throwable.cause.toString()
+                                            )
+                                            Log.e(
+                                                "FancyBtnExceptionTraceCatch",
+                                                throwable.stackTraceToString()
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }

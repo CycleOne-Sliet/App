@@ -25,6 +25,19 @@ class CloudFunctions {
 
         private val KEY = decodeHexFromStr("1E171366E3EDDCE2923BC768623606F1")
 
+        suspend fun isConnected(): Boolean {
+            return withContext(Dispatchers.IO) {
+                try {
+                    val httpURLConnection =
+                        URI.create("$URL/update_data").toURL().openConnection() as HttpURLConnection
+                    httpURLConnection.connect()
+                } catch (e: Throwable) {
+                    Log.e("CloudConnCheck", "Error: ${e.message}", e)
+                    return@withContext false
+                }
+                return@withContext true
+            }
+        }
 
         suspend fun putToken(standToken: ByteArray) {
             val httpURLConnection =
@@ -54,7 +67,7 @@ class CloudFunctions {
             }
             val serverResponse = inputStream.readBytes()
             if (httpURLConnection.responseCode != 200) {
-                throw Throwable("Server Error: ${serverResponse.toString(Charset.defaultCharset())}")
+                throw Error("Server Error: ${serverResponse.toString(Charset.defaultCharset())}")
             }
             // Read the response
             val resp = inputStream.readBytes().toString(Charset.defaultCharset())
@@ -103,7 +116,7 @@ class CloudFunctions {
 
         private fun decodeResp(data: ByteArray): Pair<MacAddress, Boolean> {
             if (data.size != 40) {
-                throw Throwable("Data length is not equal to 40")
+                throw Error("Data length is not equal to 40")
             }
             val data = data.copyOfRange(8, 40)
             val iv = data.copyOfRange(0, 16)
@@ -178,7 +191,7 @@ func decodeResp(data []byte) (net.HardwareAddr, bool, bool, error) {
             // Read the response
             val serverResponse = inputStream.readBytes()
             if (httpURLConnection.responseCode != 200) {
-                throw Throwable("Server Error: ${serverResponse.toString(Charset.defaultCharset())}")
+                throw Error("Server Error: ${serverResponse.toString(Charset.defaultCharset())}")
             }
             Log.d("ServerResp", serverResponse.toString())
             Log.d("ServerRespHex", serverResponse.toHexString(HexFormat.UpperCase))

@@ -36,6 +36,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.cycleone.cycleoneapp.ui.components.FancyButton
 import com.cycleone.cycleoneapp.ui.components.FormCard
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseUser
@@ -62,13 +63,33 @@ class EditProfile {
                     }
                 }
             }
-        UI(modifier, user, userProfilePicker, navController) {
-            user?.let { user -> onDeleteUser(navController = navController, user) }
+        UI(modifier, user, userProfilePicker, navController) { password ->
+            user?.let { user -> onDeleteUser(navController = navController, user, password) }
         }
     }
 
-    private suspend fun onDeleteUser(navController: NavController, user: FirebaseUser) {
-        user.delete().await()
+    private suspend fun onDeleteUser(
+        navController: NavController,
+        user: FirebaseUser,
+        password: String
+    ) {
+        user.email?.let { email ->
+            try {
+                user.reauthenticate(
+                    EmailAuthProvider.getCredential(
+                        email,
+                        password
+                    )
+                )
+            } catch (e: FirebaseAuthException) {
+                throw Error(e.message)
+            }
+        }
+        try {
+            user.delete().await()
+        } catch (e: Throwable) {
+            throw Error(e.message)
+        }
         navController.navigate("/sign_in")
     }
 
@@ -81,14 +102,14 @@ class EditProfile {
         try {
             user.updateProfile(profileChangeRequest.build()).await()
         } catch (e: FirebaseAuthException) {
-            throw e
+            throw Error(e.message)
         }
         val email = profile["email"]
         email?.let {
             try {
                 FirebaseAuth.getInstance().currentUser?.verifyBeforeUpdateEmail(email)
             } catch (e: FirebaseAuthException) {
-                throw e
+                throw Error(e.message)
             }
         }
     }
@@ -112,7 +133,8 @@ class EditProfile {
             Box(
                 modifier = Modifier
                     .width(256.dp)
-                    .height(256.dp)
+                    .height(256.dp),
+                contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current).data(user?.photoUrl)
@@ -121,7 +143,7 @@ class EditProfile {
                     fallback = rememberVectorPainter(Icons.Default.Person),
                     placeholder = rememberVectorPainter(Icons.Default.Person),
                     modifier = Modifier
-                        .fillMaxWidth(0.3F)
+                        .fillMaxWidth()
                         .clickable {
                             userProfilePhotoPicker?.launch("*/*")
                         },
@@ -170,9 +192,12 @@ class EditProfile {
                     }
                 }
             }
-            FancyButton(onClick = {
-                openDialog = true
-            }, text = "Delete Account")
+            FancyButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    openDialog = true
+                }, text = "Delete Account"
+            )
         }
     }
 }

@@ -134,6 +134,7 @@ class Home {
             ) {
                 Button(
                     enabled = true,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     onClick = {
                         Log.d("coroutine", "Launched NavProvider Coroutine")
                         coroutineScope.launch {

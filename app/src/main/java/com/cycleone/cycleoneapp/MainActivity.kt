@@ -4,8 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,13 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +55,7 @@ import coil.request.ImageRequest
 import com.cycleone.cycleoneapp.services.CachedNetworkClient
 import com.cycleone.cycleoneapp.services.LocationProvider
 import com.cycleone.cycleoneapp.services.NavProvider
+import com.cycleone.cycleoneapp.ui.components.FancyButton
 import com.cycleone.cycleoneapp.ui.components.NormalBackground
 import com.cycleone.cycleoneapp.ui.screens.AllLocations
 import com.cycleone.cycleoneapp.ui.screens.EditProfile
@@ -68,6 +70,7 @@ import com.cycleone.cycleoneapp.ui.screens.UnlockScreen
 import com.cycleone.cycleoneapp.ui.theme.CycleoneAppTheme
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 
 const val uri = "cycleone://cycleone.base"
@@ -202,60 +205,74 @@ fun MainScaffold(
 ) {
     val user = FirebaseAuth.getInstance().currentUser
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
     NavProvider.drawer = drawerState
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
-                Button(
-                    onClick = { navController.popBackStack() },
-                    colors = ButtonColors(
-                        Color.Transparent,
-                        Color.White,
-                        Color.Transparent,
-                        Color.Gray
-                    )
+            ModalDrawerSheet(modifier = Modifier.fillMaxHeight()) {
+                Column(
+                    modifier = Modifier.fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Image(painterResource(R.drawable.left_arrow), "Back")
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        modifier = Modifier
-                            .width(256.dp)
-                            .height(256.dp)
-                    ) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current).data(user?.photoUrl)
-                                .build(),
-                            contentDescription = "Profile Photo",
-                            fallback = rememberVectorPainter(Icons.Default.Person),
-                            placeholder = rememberVectorPainter(Icons.Default.Person),
-                            modifier = Modifier
-                                .fillMaxWidth(0.3F),
-                            alignment = Alignment.Center,
-                            contentScale = ContentScale.FillWidth
+
+                    Button(
+                        onClick = { coroutineScope.launch { drawerState.close() } },
+                        colors = ButtonColors(
+                            Color.Transparent,
+                            Color.White,
+                            Color.Transparent,
+                            Color.Gray
                         )
+                    ) {
+                        Image(painterResource(R.drawable.left_arrow), "Back")
                     }
-                    user?.displayName?.let { Text(it, modifier = Modifier.padding(16.dp)) }
-                }
-                Column(modifier = Modifier.clip(RoundedCornerShape(25.dp, 0.dp, 0.dp, 0.dp))) {
-                    Column {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .width(256.dp)
+                                .height(256.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(user?.photoUrl)
+                                    .build(),
+                                contentDescription = "Profile Photo",
+                                fallback = rememberVectorPainter(Icons.Default.Person),
+                                placeholder = rememberVectorPainter(Icons.Default.Person),
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                alignment = Alignment.Center,
+                                contentScale = ContentScale.FillWidth
+                            )
+                        }
+                        user?.displayName?.let { Text(it, modifier = Modifier.padding(16.dp)) }
+                    }
+                    Column(
+                        modifier = Modifier.clip(RoundedCornerShape(25.dp, 0.dp, 0.dp, 0.dp)),
+                    ) {
                         drawerPaths.forEach { drawerPath ->
                             NavigationDrawerItem(
                                 label = { Text(text = drawerPath.name) },
                                 selected = false,
-                                onClick = { navController.navigate(drawerPath.dest) }
+                                onClick = {
+                                    navController.navigate(drawerPath.dest)
+                                    coroutineScope.launch {
+                                        drawerState.close()
+                                    }
+                                }
                             )
                             HorizontalDivider()
                         }
                     }
-                    Button(onClick = {
+                    FancyButton(modifier = Modifier.fillMaxWidth(), text = "Logout", onClick = {
                         FirebaseAuth.getInstance().signOut()
+                        coroutineScope.launch {
+                            drawerState.close()
+                        }
                         navController.navigate("/sign_in")
-                    }) {
-                        Icon(Icons.AutoMirrored.Default.Logout, "Logout")
-                        Text("Logout")
-                    }
+                    })
                 }
             }
         }
