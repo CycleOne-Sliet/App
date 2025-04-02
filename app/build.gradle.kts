@@ -15,8 +15,8 @@ android {
         applicationId = "com.cycleone.cycleoneapp"
         minSdk = 29
         targetSdk = 35
-        versionCode = 10003
-        versionName = "1.000.3"
+        versionCode = 10005
+        versionName = "1.000.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

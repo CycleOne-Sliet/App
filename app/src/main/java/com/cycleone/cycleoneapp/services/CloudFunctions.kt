@@ -23,7 +23,7 @@ class CloudFunctions {
     companion object {
         private const val URL = "https://cycleruncloudrun-313643300650.asia-northeast1.run.app"
 
-        private val KEY = decodeHexFromStr("1E171366E3EDDCE2923BC768623606F1")
+        //private val KEY = decodeHexFromStr("1E171366E3EDDCE2923BC768623606F1")
 
         suspend fun isConnected(): Boolean {
             return withContext(Dispatchers.IO) {
@@ -74,6 +74,7 @@ class CloudFunctions {
             Log.d("Unlock Resp", resp)
         }
 
+		/*
         fun token(standToken: ByteArray): ByteArray {
             Log.d("Stand Token", standToken.toHexString(HexFormat.UpperCase))
             val unencryptedResp = ByteArray(16)
@@ -113,6 +114,7 @@ class CloudFunctions {
             return response
 
         }
+		*/
 
         private fun decodeResp(data: ByteArray): Pair<MacAddress, Boolean> {
             if (data.size != 40) {
@@ -160,7 +162,6 @@ func decodeResp(data []byte) (net.HardwareAddr, bool, bool, error) {
 }
          */
         // Responsible for providing the encrypted token for unlocking the stand
-        /*
         @OptIn(ExperimentalStdlibApi::class)
         suspend fun token(standToken: ByteArray): ByteArray {
             Log.d("CloudFunctions", "Sending Status")
@@ -196,6 +197,6 @@ func decodeResp(data []byte) (net.HardwareAddr, bool, bool, error) {
             Log.d("ServerResp", serverResponse.toString())
             Log.d("ServerRespHex", serverResponse.toHexString(HexFormat.UpperCase))
             return serverResponse
-        }*/
+        }
     }
 }
