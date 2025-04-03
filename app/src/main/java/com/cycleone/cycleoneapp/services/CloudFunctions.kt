@@ -114,7 +114,6 @@ class CloudFunctions {
             return response
 
         }
-		*/
 
         private fun decodeResp(data: ByteArray): Pair<MacAddress, Boolean> {
             if (data.size != 40) {
@@ -134,6 +133,7 @@ class CloudFunctions {
             val macAddress = MacAddress.fromBytes(macAddressBytes)
             return Pair(macAddress, isStandUnlocked == 0x01.toByte())
         }
+		*/
         /*
 
 func decodeResp(data []byte) (net.HardwareAddr, bool, bool, error) {
