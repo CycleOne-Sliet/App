@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,12 +13,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Abc
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,10 +34,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -125,32 +134,46 @@ class EditProfile {
     ) {
         var openDialog by remember { mutableStateOf(false) }
         Column(
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize().padding(start = 8.dp,end=8.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Edit Profile")
-            Box(
-                modifier = Modifier
-                    .width(256.dp)
-                    .height(256.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current).data(user?.photoUrl)
-                        .build(),
-                    contentDescription = "Profile Photo",
-                    fallback = rememberVectorPainter(Icons.Default.Person),
-                    placeholder = rememberVectorPainter(Icons.Default.Person),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            userProfilePhotoPicker?.launch("*/*")
-                        },
-                    alignment = Alignment.Center,
-                    contentScale = ContentScale.FillWidth
+            Text("Edit Profile",
+                fontSize = 20.sp,
+                color = Color(0xffff6b35),
+
                 )
+            Card(
+                shape = CircleShape,
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(215.dp)
+                    .border(3.dp, Color(0xffff6b35), CircleShape)
+            ){
+                Box(
+                    modifier = Modifier
+                        .width(215.dp)
+                        .height(215.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current).data(user?.photoUrl)
+                            .build(),
+                        contentDescription = "Profile Photo",
+                        fallback = rememberVectorPainter(Icons.Default.Person),
+                        placeholder = rememberVectorPainter(Icons.Default.Person),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                userProfilePhotoPicker?.launch("*/*")
+                            },
+                        alignment = Alignment.Center,
+                        contentScale = ContentScale.FillWidth
+                    )
+                }
+
             }
+
             Column {
                 FormCard().Create(
                     fields = listOf(
@@ -168,6 +191,16 @@ class EditProfile {
                             label = "Phone Number",
                             key = "phone",
                             icon = Icons.Default.Phone
+                        ),
+                        FormCard.FormCardField.TextField(
+                            label = "Branch",
+                            key = "branch",
+                            icon =Icons.Default.Abc
+                        ),
+                        FormCard.FormCardField.TextField(
+                            label = "Course Year",
+                            key = "year",
+                            icon = Icons.Default.Numbers
                         ),
                     ),
                     actionName = "Save Changes",

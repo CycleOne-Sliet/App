@@ -4,14 +4,19 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,6 +25,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -38,12 +44,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -212,29 +220,16 @@ fun MainScaffold(
         drawerContent = {
             ModalDrawerSheet(modifier = Modifier.fillMaxHeight()) {
                 Column(
-                    modifier = Modifier.fillMaxHeight(),
-                    verticalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier.fillMaxHeight().width(320.dp).padding(start = 8.dp),
+                 //  verticalArrangement = Arrangement.SpaceBetween
                 ) {
-
-                    Button(
-                        onClick = { coroutineScope.launch { drawerState.close() } },
-                        colors = ButtonColors(
-                            Color.Transparent,
-                            Color.White,
-                            Color.Transparent,
-                            Color.Gray
-                        )
-                    ) {
-                        Image(painterResource(R.drawable.left_arrow), "Back")
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
-                                .width(256.dp)
-                                .height(256.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            AsyncImage(
+                                .requiredWidth(320.dp)
+                                .requiredHeight(200.dp).background(Color(0xffff6b35), RoundedCornerShape(topEnd = 16.dp)),
+                            contentAlignment = Alignment.Center)
+                         {
+                         /*   AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
                                     .data(user?.photoUrl)
                                     .build(),
@@ -245,16 +240,47 @@ fun MainScaffold(
                                     .fillMaxWidth(),
                                 alignment = Alignment.Center,
                                 contentScale = ContentScale.FillWidth
-                            )
+                            )*/
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                Button(
+                                    onClick = { coroutineScope.launch { drawerState.close() } },
+                                    colors = ButtonColors(
+                                        Color.Transparent,
+                                        Color.Gray,
+                                        Color.Transparent,
+                                        Color.Black
+                                    )
+                                ) {
+                                    Image(painterResource(R.drawable.left_arrow), "Back",
+                                       colorFilter = ColorFilter.tint(color = Color.Black) )
+                                }
+                                Text(text = "CycleOne", fontSize = 64.sp,
+                                    color = Color.Black)
+                            }
+
+
                         }
-                        user?.displayName?.let { Text(it, modifier = Modifier.padding(16.dp)) }
-                    }
+                      //  user?.displayName?.let { Text(it, modifier = Modifier.padding(16.dp)) }
+
+                    HorizontalDivider(thickness = 3.dp)
+                    Spacer(modifier = Modifier.height(15.dp))
+
                     Column(
-                        modifier = Modifier.clip(RoundedCornerShape(25.dp, 0.dp, 0.dp, 0.dp)),
+                        modifier = Modifier.clip(RoundedCornerShape(25.dp, 0.dp, 0.dp, 0.dp))
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.SpaceBetween
+
                     ) {
                         drawerPaths.forEach { drawerPath ->
                             NavigationDrawerItem(
-                                label = { Text(text = drawerPath.name) },
+                                label = { Text(text = "My Profile",
+                                    fontSize = 18.sp,
+                                    color = Color(0xffff6b35),
+                                    modifier = Modifier.weight(1f)) },
+                                icon = {
+                                    Icon(imageVector = Icons.Default.Person, contentDescription = null,
+                                        tint = Color(0xffff6b35))
+                                },
                                 selected = false,
                                 onClick = {
                                     navController.navigate(drawerPath.dest)
@@ -263,16 +289,17 @@ fun MainScaffold(
                                     }
                                 }
                             )
-                            HorizontalDivider()
+
                         }
+                        FancyButton(modifier = Modifier.fillMaxWidth(), text = "Logout", onClick = {
+                            FirebaseAuth.getInstance().signOut()
+                            coroutineScope.launch {
+                                drawerState.close()
+                            }
+                            navController.navigate("/sign_in")
+                        })
                     }
-                    FancyButton(modifier = Modifier.fillMaxWidth(), text = "Logout", onClick = {
-                        FirebaseAuth.getInstance().signOut()
-                        coroutineScope.launch {
-                            drawerState.close()
-                        }
-                        navController.navigate("/sign_in")
-                    })
+
                 }
             }
         }
