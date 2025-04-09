@@ -39,7 +39,8 @@ import java.util.Locale
 
 class FormCard {
     sealed class FormCardField {
-        class TextField(val label: String, val key: String, val icon: ImageVector?) :
+        class TextField(val label: String, val key: String, val icon: ImageVector?,
+            val isSingleline:Boolean) :
             FormCardField()
 
         class PasswordField(val label: String, val key: String) : FormCardField()
@@ -83,7 +84,8 @@ class FormCard {
                                 .fillMaxWidth(),
                             placeholder = "Enter ${field.label}",
                             onChange = { x -> state[field.key] = x },
-                            iconVector = field.icon
+                            iconVector = field.icon,
+                            isSingleline = false
                         )
                     }
 

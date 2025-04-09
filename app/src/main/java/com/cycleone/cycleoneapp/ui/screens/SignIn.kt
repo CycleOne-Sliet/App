@@ -103,7 +103,8 @@ class SignIn {
                     FormCard.FormCardField.TextField(
                         label = "Email",
                         key = "email",
-                        Icons.Default.Person
+                        Icons.Default.Person,
+                        isSingleline = false
                     ),
                     FormCard.FormCardField.PasswordField(label = "Password", key = "password"),
                 ),

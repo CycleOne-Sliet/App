@@ -213,8 +213,10 @@ class SignUp {
                 }
                 FormCard().Create(
                     fields = listOf(
-                        FormCard.FormCardField.TextField("Full Name", "name", Icons.Default.Person),
-                        FormCard.FormCardField.TextField("Email", "email", Icons.Default.Email),
+                        FormCard.FormCardField.TextField("Full Name", "name", Icons.Default.Person,
+                            isSingleline = false),
+                        FormCard.FormCardField.TextField("Email", "email", Icons.Default.Email,
+                            isSingleline = false),
                         FormCard.FormCardField.CreatePasswordField("Password", "password"),
                     ),
                     navController = navController

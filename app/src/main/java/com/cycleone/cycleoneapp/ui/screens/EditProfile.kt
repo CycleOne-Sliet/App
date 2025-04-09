@@ -49,7 +49,10 @@ import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 
@@ -102,8 +105,13 @@ class EditProfile {
         navController.navigate("/sign_in")
     }
 
-    private suspend fun onEditProfile(user: FirebaseUser, profile: Map<String, String>) {
+    private suspend fun onEditProfile(user: FirebaseUser, profile: Map<String, String>
+                                      ) {
         val name = profile["name"]
+        val phone = profile["phone"]
+        val branch = profile["branch"]
+        val year = profile["year"]
+
         var profileChangeRequest = UserProfileChangeRequest.Builder()
         name?.let {
             profileChangeRequest = profileChangeRequest.setDisplayName(it)
@@ -121,6 +129,25 @@ class EditProfile {
                 throw Error(e.message)
             }
         }
+        // 3. Update custom fields in Firestore
+        val db = FirebaseFirestore.getInstance()
+        val userData = mutableMapOf<String, Any>()
+
+        phone?.let { userData["phone"] = it }
+        branch?.let { userData["branch"] = it }
+        year?.let { userData["year"] = it }
+
+        if (userData.isNotEmpty()) {
+            try {
+                db.collection("users").document(user.uid)
+                    .set(userData, SetOptions.merge())
+                    .await()
+                Log.d("EditProfile", "Custom fields saved to Firestore: $userData")
+            } catch (e: Exception) {
+                Log.e("EditProfile", "Failed to update custom fields: ${e.message}")
+            }
+        }
+
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -180,27 +207,32 @@ class EditProfile {
                         FormCard.FormCardField.TextField(
                             label = "Name",
                             key = "name",
-                            icon = Icons.Default.Person
+                            icon = Icons.Default.Person,
+                            isSingleline = true
                         ),
                         FormCard.FormCardField.TextField(
                             label = "Email",
                             key = "email",
-                            icon = Icons.Default.Email
+                            icon = Icons.Default.Email,
+                            isSingleline = false
                         ),
                         FormCard.FormCardField.TextField(
                             label = "Phone Number",
                             key = "phone",
-                            icon = Icons.Default.Phone
+                            icon = Icons.Default.Phone,
+                            isSingleline = true
                         ),
                         FormCard.FormCardField.TextField(
                             label = "Branch",
                             key = "branch",
-                            icon =Icons.Default.Abc
+                            icon =Icons.Default.Abc,
+                            isSingleline = true
                         ),
                         FormCard.FormCardField.TextField(
                             label = "Course Year",
                             key = "year",
-                            icon = Icons.Default.Numbers
+                            icon = Icons.Default.Numbers,
+                            isSingleline = true
                         ),
                     ),
                     actionName = "Save Changes",

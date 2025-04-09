@@ -44,6 +44,7 @@ class PrestyledText {
         enabled: Boolean = true,
         isPassword: Boolean = false,
         iconVector: ImageVector? = null,
+        isSingleline:Boolean = false,
         icon: @Composable () -> Unit = {
             iconVector?.let {
                 Icon(it, "Icon", tint = Color.White)
@@ -78,7 +79,8 @@ class PrestyledText {
                 fontFamily = monsterratFamily,
                 color = Color.White
             ),
-            trailingIcon = icon
+            trailingIcon = icon,
+            singleLine = isSingleline
             )
     }
 
