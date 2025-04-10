@@ -11,14 +11,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.coroutineScope
 import com.cycleone.cycleoneapp.ui.theme.monsterratFamily
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
@@ -49,10 +51,13 @@ fun FancyButton(
     var loading by remember {
         mutableStateOf(false)
     }
-    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleCoroutineScope = lifecycleOwner.lifecycle.coroutineScope
     Button(
         onClick = {
-            coroutineScope.launch(CoroutineExceptionHandler { _, throwable ->
+
+            lifecycleCoroutineScope.launch(CoroutineExceptionHandler { _, throwable ->
                 Log.e("FancyBtnExceptionMsg", throwable.message.toString())
                 Log.e("FancyBtnExceptionCause", throwable.cause.toString())
                 Log.e("FancyBtnExceptionTrace", throwable.stackTraceToString())
