@@ -67,8 +67,11 @@ import com.cycleone.cycleoneapp.ui.components.FancyButton
 import com.cycleone.cycleoneapp.ui.components.NormalBackground
 import com.cycleone.cycleoneapp.ui.screens.AllLocations
 import com.cycleone.cycleoneapp.ui.screens.EditProfile
+import com.cycleone.cycleoneapp.ui.screens.FeedbackScreen
 import com.cycleone.cycleoneapp.ui.screens.ForgotPassword
+import com.cycleone.cycleoneapp.ui.screens.HistoryScreen
 import com.cycleone.cycleoneapp.ui.screens.Home
+import com.cycleone.cycleoneapp.ui.screens.NotificationScreen
 import com.cycleone.cycleoneapp.ui.screens.Onboarding
 import com.cycleone.cycleoneapp.ui.screens.OtpScreen
 import com.cycleone.cycleoneapp.ui.screens.Profile
@@ -195,6 +198,24 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
                 showBottomBar = true
                 backgroundImage = R.drawable.normal_background
                 AllLocations().Create(modifier, navController)
+            }
+            composable("/feedbackPage") {
+                showTopBar = true
+                showBottomBar = true
+                backgroundImage = R.drawable.normal_background
+                FeedbackScreen(modifier, navController)
+            }
+            composable("/notification") {
+                showTopBar = true
+                showBottomBar = true
+                backgroundImage = R.drawable.normal_background
+                NotificationScreen(modifier, navController)
+            }
+            composable("/history") {
+                showTopBar = true
+                showBottomBar = true
+                backgroundImage = R.drawable.normal_background
+                HistoryScreen(modifier, navController)
             }
         }
     }

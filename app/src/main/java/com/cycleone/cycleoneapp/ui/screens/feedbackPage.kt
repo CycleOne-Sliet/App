@@ -1,0 +1,216 @@
+package com.cycleone.cycleoneapp.ui.screens
+
+import android.annotation.SuppressLint
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+
+@OptIn(ExperimentalMaterial3Api::class)
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@Composable
+fun FeedbackScreen(modifier: Modifier = Modifier, navController: NavController) {
+    var message by remember { mutableStateOf("") }
+    val messages = remember { mutableStateListOf<Pair<String, Uri?>>() }
+    var showAttachmentOptions by remember { mutableStateOf(false) }
+
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { messages.add("" to uri) }
+    }
+
+    val videoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { messages.add("" to uri) }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Feedback") })
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxSize()
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                reverseLayout = true
+            ) {
+                items(messages.size) { index ->
+                    val (text, uri) = messages[messages.size - 1 - index]
+                    if (uri != null) {
+                        Image(
+                            painter = rememberAsyncImagePainter(uri),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .padding(4.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(4.dp)
+                        ) {
+                            Text(
+                                text = text,
+                                color = Color.White,
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .background(Color(0xffff6b35), shape = RoundedCornerShape(12.dp))
+                                    .padding(12.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                AnimatedVisibility(
+                    visible = showAttachmentOptions,
+                    enter = fadeIn(animationSpec = tween(300)) + expandVertically(),
+                    exit = fadeOut(animationSpec = tween(300)) + shrinkVertically()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(bottom = 8.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        AttachmentFAB(
+                            icon = Icons.Default.Image,
+                            label = "Image",
+                            onClick = {
+                                imagePicker.launch("image/*")
+                                showAttachmentOptions = false
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        AttachmentFAB(
+                            icon = Icons.Default.Videocam,
+                            label = "Video",
+                            onClick = {
+                                videoPicker.launch("video/*")
+                                showAttachmentOptions = false
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        AttachmentFAB(
+                            icon = Icons.Default.CameraAlt,
+                            label = "Camera",
+                            onClick = {
+                                // Add camera capture logic if needed
+                                showAttachmentOptions = false
+                            }
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xffff6b35))
+                            .padding(horizontal = 8.dp, vertical = 12.dp)
+                    ) {
+                        if (message.isEmpty()) {
+                            Text(
+                                text = "Write your feedback",
+                                color = Color.LightGray
+                            )
+                        }
+                        BasicTextField(
+                            value = message,
+                            onValueChange = { message = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = LocalTextStyle.current.copy(color = Color.White)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { showAttachmentOptions = !showAttachmentOptions },
+                        modifier = Modifier
+                            .size(56.dp)
+                            .background(Color(0xffff6b35), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AttachFile,
+                            contentDescription = "Attach",
+                            tint = Color.White
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    IconButton(
+                        onClick = {
+                            if (message.isNotBlank()) {
+                                messages.add(message to null)
+                                message = ""
+                            }
+                        },
+                        modifier = Modifier
+                            .size(56.dp)
+                            .background(Color(0xffff6b35), shape = CircleShape)
+                    ) {
+                        Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AttachmentFAB(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        FloatingActionButton(
+            onClick = onClick,
+            containerColor = Color(0xffff6b35),
+            shape = CircleShape,
+            modifier = Modifier.size(48.dp)
+        ) {
+            Icon(imageVector = icon, contentDescription = label, tint = Color.White)
+        }
+        Text(label, color = Color.White, style = MaterialTheme.typography.labelSmall)
+    }
+}

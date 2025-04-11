@@ -164,16 +164,20 @@ class Home {
                         .width(58.dp)
                         .height(37.dp)
                 )
-                Button(enabled = false, onClick = { /*TODO*/ }) {
+                Button(
+                    enabled = true,
+                    onClick = { navController.navigate("/history") }
+                ) {
                     Image(
                         painter = painterResource(R.drawable.vector_1_),
-                        "Menu",
+                        contentDescription = "Menu",
                         modifier = Modifier
                             .width(32.dp)
                             .height(32.dp)
                     )
                 }
-            }
+                }
+
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
@@ -328,14 +332,14 @@ class Home {
                     Alignment.CenterVertically
                 ) {
                     Button(
-                        onClick = {},
+                        onClick = {navController.navigate("/notification")},
                         colors = ButtonDefaults.buttonColors()
                             .copy(containerColor = Color.Transparent)
                     ) {
                         Icon(Icons.Default.Notifications, "Notification")
                     }
                     Button(
-                        onClick = {},
+                        onClick = {navController.navigate("/feedbackPage")},
                         colors = ButtonDefaults.buttonColors()
                             .copy(containerColor = Color.Transparent)
                     ) {
