@@ -39,17 +39,8 @@ fun HistoryScreen(modifier: Modifier = Modifier, navController: NavController) {
         mutableStateListOf(
             BikeHistoryItem(1, System.currentTimeMillis() - 9000000, System.currentTimeMillis() - 8700000, "Main Gate", "Library", 2.4),
             BikeHistoryItem(2, System.currentTimeMillis() - 17200000, System.currentTimeMillis() - 17100000, "Cafeteria", "Hostel", 1.8),
-            BikeHistoryItem(3, System.currentTimeMillis() - 25900000, System.currentTimeMillis() - 25800000, "Gym", "Main Gate", 3.2),
-            BikeHistoryItem(1, System.currentTimeMillis() - 9000000, System.currentTimeMillis() - 8700000, "Main Gate", "Library", 2.4),
-            BikeHistoryItem(2, System.currentTimeMillis() - 17200000, System.currentTimeMillis() - 17100000, "Cafeteria", "Hostel", 1.8),
-            BikeHistoryItem(3, System.currentTimeMillis() - 25900000, System.currentTimeMillis() - 25800000, "Gym", "Main Gate", 3.2),
-            BikeHistoryItem(1, System.currentTimeMillis() - 9000000, System.currentTimeMillis() - 8700000, "Main Gate", "Library", 2.4),
-            BikeHistoryItem(2, System.currentTimeMillis() - 17200000, System.currentTimeMillis() - 17100000, "Cafeteria", "Hostel", 1.8),
-            BikeHistoryItem(3, System.currentTimeMillis() - 25900000, System.currentTimeMillis() - 25800000, "Gym", "Main Gate", 3.2),
-            BikeHistoryItem(1, System.currentTimeMillis() - 9000000, System.currentTimeMillis() - 8700000, "Main Gate", "Library", 2.4),
-            BikeHistoryItem(2, System.currentTimeMillis() - 17200000, System.currentTimeMillis() - 17100000, "Cafeteria", "Hostel", 1.8),
-            BikeHistoryItem(3, System.currentTimeMillis() - 25900000, System.currentTimeMillis() - 25800000, "Gym", "Main Gate", 3.2),
-            )
+            BikeHistoryItem(3, System.currentTimeMillis() - 25900000, System.currentTimeMillis() - 25800000, "Gym", "Main Gate", 3.2)
+        )
     }
 
     Scaffold(
@@ -104,18 +95,23 @@ fun HistoryCard(item: BikeHistoryItem) {
     ) {
         Column(
             modifier = Modifier
-                .background(Color(0xFF3D3D3D))
+                .background(Color(0xffff6b35))
                 .padding(16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Schedule,
                     contentDescription = null,
-                    tint = Color(0xFF3B82F6),
+                    tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(formattedStartTime, fontSize = 14.sp, color = Color.Gray)
+                Text(
+                    text = formattedStartTime,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -134,7 +130,7 @@ fun HistoryCard(item: BikeHistoryItem) {
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("From: ${item.startLocation}", fontSize = 14.sp)
+                        Text("From: ${item.startLocation}", fontSize = 14.sp, color = Color.White)
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -145,13 +141,13 @@ fun HistoryCard(item: BikeHistoryItem) {
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("To: ${item.endLocation}", fontSize = 14.sp)
+                        Text("To: ${item.endLocation}", fontSize = 14.sp, color = Color.White)
                     }
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("${item.distanceKm} km", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text("$durationMinutes min", fontSize = 14.sp, color = Color.Gray)
+                    Text("${item.distanceKm} km", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                    Text("$durationMinutes min", fontSize = 14.sp, color = Color.White)
                 }
             }
         }

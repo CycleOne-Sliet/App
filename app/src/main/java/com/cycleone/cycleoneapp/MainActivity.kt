@@ -66,6 +66,7 @@ import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.FancyButton
 import com.cycleone.cycleoneapp.ui.components.NormalBackground
 import com.cycleone.cycleoneapp.ui.screens.AllLocations
+import com.cycleone.cycleoneapp.ui.screens.CoinPage
 import com.cycleone.cycleoneapp.ui.screens.EditProfile
 import com.cycleone.cycleoneapp.ui.screens.FeedbackScreen
 import com.cycleone.cycleoneapp.ui.screens.ForgotPassword
@@ -217,6 +218,13 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
                 backgroundImage = R.drawable.normal_background
                 HistoryScreen(modifier, navController)
             }
+            composable("/coinpage") {
+                showTopBar = true
+                showBottomBar = true
+                backgroundImage = R.drawable.normal_background
+                CoinPage(modifier, navController)
+            }
+
         }
     }
 }

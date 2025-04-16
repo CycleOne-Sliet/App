@@ -40,7 +40,9 @@ fun FancyButton(
                 text,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold,
-                fontFamily = monsterratFamily
+                fontFamily = monsterratFamily,
+                maxLines = 1
+
             )
         }
     }
