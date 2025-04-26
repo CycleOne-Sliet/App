@@ -102,6 +102,8 @@ dependencies {
     implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("io.github.rizmaulana:compose-stacked-snackbar:1.0.4")
+    implementation("com.google.firebase:firebase-database-ktx")
+
 }
 
 project.configurations.configureEach {

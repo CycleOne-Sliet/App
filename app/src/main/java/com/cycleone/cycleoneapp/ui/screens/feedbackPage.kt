@@ -3,6 +3,7 @@ package com.cycleone.cycleoneapp.ui.screens
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -30,9 +31,17 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.cycleone.cycleoneapp.services.Feedback
+
+import com.cycleone.cycleoneapp.services.mapMessageToFirestoreMap
+import com.cycleone.cycleoneapp.uri
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,6 +51,9 @@ fun FeedbackScreen(modifier: Modifier = Modifier, navController: NavController) 
     var message by remember { mutableStateOf("") }
     val messages = remember { mutableStateListOf<Pair<String, Uri?>>() }
     var showAttachmentOptions by remember { mutableStateOf(false) }
+    val database = FirebaseDatabase.getInstance()
+    val feedbackRef = database.getReference("feedbacks")
+
 
     val context = LocalContext.current
     val phoneNumber = "tel:+91 6205538058" // Replace with actual mobile number
@@ -59,7 +71,7 @@ fun FeedbackScreen(modifier: Modifier = Modifier, navController: NavController) 
         Box(modifier = Modifier.fillMaxSize()) {
 
             // Background Canvas
-            Canvas(modifier = Modifier.fillMaxSize()) {
+          /*  Canvas(modifier = Modifier.fillMaxSize()) {
                 val width = size.width
                 val height = size.height
 
@@ -85,7 +97,7 @@ fun FeedbackScreen(modifier: Modifier = Modifier, navController: NavController) 
                     cornerRadius = CornerRadius(30f, 30f),
                     style = Stroke(width = 6f)
                 )
-            }
+            }*/
 
             Column(modifier = Modifier.fillMaxSize()) {
 
@@ -236,10 +248,32 @@ fun FeedbackScreen(modifier: Modifier = Modifier, navController: NavController) 
 
                             IconButton(
                                 onClick = {
-                                    if (message.isNotBlank()) {
-                                        messages.add(message to null)
-                                        message = ""
-                                    }
+
+                                      /*  if (message.isNotBlank()) {
+                                            // Add to local list
+                                            messages.add(message to null)
+
+                                            // Push to Firebase
+                                            val feedback = Feedback(message = message)
+                                            feedbackRef.push().setValue(feedback)
+
+                                            // Clear the input
+                                            message = ""
+                                        }*/
+
+                                    val db = FirebaseFirestore.getInstance()
+                                    val feedbackMap = mapMessageToFirestoreMap(message = message, uri = uri?.toString())
+
+                                    db.collection("feedbacks")
+                                        .add(feedbackMap)
+                                        .addOnSuccessListener {
+                                            Log.d("Firestore", "Feedback added successfully")
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Log.e("Firestore", "Error adding feedback", e)
+                                        }
+
+
                                 },
                                 modifier = Modifier
                                     .size(56.dp)
