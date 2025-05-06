@@ -188,7 +188,6 @@ class Stand : Application() {
 
                         override fun onUnavailable() {
                             super.onUnavailable()
-                            onUnavailable()
                             Log.e("Unavailable", "Network is not found")
                             if (isHotspotActive(context)) {
                                 Toast.makeText(
@@ -220,7 +219,6 @@ class Stand : Application() {
                                 "Could not connect to stand",
                                 Toast.LENGTH_LONG
                             ).show()
-                            cont.resume(null)
                         }
 
                         override fun onLost(network: Network) {
@@ -230,7 +228,6 @@ class Stand : Application() {
                                 "Stand WiFi connection lost",
                                 Toast.LENGTH_LONG
                             ).show()
-                            cont.resume(null)
                         }
 
 
@@ -245,7 +242,6 @@ class Stand : Application() {
                                     Toast.LENGTH_LONG
                                 ).show()
                             }
-                            cont.resume(null)
                         }
                     }
                 // Request android to provide the network as configured

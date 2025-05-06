@@ -33,6 +33,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.coroutineScope
 import androidx.navigation.NavController
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.services.CloudFunctions
@@ -48,8 +50,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
@@ -91,7 +95,8 @@ class UnlockScreen {
             mutableStateOf(null)
         }
 
-        val coroutineScope = rememberCoroutineScope()
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val lifecycleCoroutineScope = lifecycleOwner.lifecycle.coroutineScope
 
         Firebase.firestore.collection("users").document(uid).get()
             .addOnSuccessListener {
@@ -176,39 +181,42 @@ class UnlockScreen {
              //       userHasCycle = userSnap.data?.get("HasCycle")!! as Boolean
              //   }
 
-                coroutineScope.launch {
-                    try {
-                        val userSnap = Firebase.firestore.collection("users").document(uid).get().await()
-                        val userSnapData = userSnap.data
-                        val currentCoins = (userSnapData?.get("Coins") as? Long ?: 0L).toInt()
+                lifecycleCoroutineScope.launch {
+                    withContext(Dispatchers.IO) {
+                        try {
+                            val userSnap = Firebase.firestore.collection("users").document(uid).get().await()
+                            val userSnapData = userSnap.data
+                            val currentCoins = (userSnapData?.get("Coins") as? Long ?: 0L).toInt()
 
-                        Log.d("currentCoins", currentCoins.toString())
+                            Log.d("currentCoins", currentCoins.toString())
 
-                        if (currentCoins < 5) {
-                            Toast.makeText(context, "You need at least 5 coins to unlock a cycle", Toast.LENGTH_LONG).show()
-                            return@launch
+                            if (currentCoins < 5) {
+                                Toast.makeText(context, "You need at least 5 coins to unlock a cycle", Toast.LENGTH_LONG).show()
+                                return@withContext
+                            }
+
+
+
+                            userHasCycle = Firebase.firestore.collection("users")
+                                .document(uid).get().await().data?.get("HasCycle") as? Boolean
+
+                            triggerStandSeq(qr, context, userHasCycle)
+                            Log.d("userHasCycle", userHasCycle.toString())
+
+                            // Deduct 5 coins
+                            val updatedCoins = currentCoins - 5
+                            userSnap.reference.update("Coins", updatedCoins).await()
+
+                            val updatedSnap = Firebase.firestore.collection("users").document(uid).get().await()
+                            if (updatedSnap.data?.get("HasCycle") != null) {
+                                userHasCycle = updatedSnap.data?.get("HasCycle") as Boolean
+                            }
+
+                        } catch (e: Exception) {
+                            Log.e("onScanSuccess", "Error: ${e.message}", e)
+                            Toast.makeText(context, "Something went wrong: ${e.message}", Toast.LENGTH_LONG).show()
                         }
 
-
-
-                        userHasCycle = Firebase.firestore.collection("users")
-                            .document(uid).get().await().data?.get("HasCycle") as? Boolean
-
-                        triggerStandSeq(qr, context, userHasCycle)
-                        Log.d("userHasCycle", userHasCycle.toString())
-
-                        // Deduct 5 coins
-                        val updatedCoins = currentCoins - 5
-                        userSnap.reference.update("Coins", updatedCoins).await()
-
-                        val updatedSnap = Firebase.firestore.collection("users").document(uid).get().await()
-                        if (updatedSnap.data?.get("HasCycle") != null) {
-                            userHasCycle = updatedSnap.data?.get("HasCycle") as Boolean
-                        }
-
-                    } catch (e: Exception) {
-                        Log.e("onScanSuccess", "Error: ${e.message}", e)
-                        Toast.makeText(context, "Something went wrong: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
 
