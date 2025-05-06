@@ -1,6 +1,7 @@
 package com.cycleone.cycleoneapp.ui.screens
 
 import android.content.Context
+import android.util.Log
 import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -41,9 +42,12 @@ import androidx.navigation.compose.rememberNavController
 import com.cycleone.cycleoneapp.R
 import com.cycleone.cycleoneapp.ui.components.FormCard
 import com.cycleone.cycleoneapp.ui.theme.monsterratFamily
+import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.tasks.await
 import kotlin.time.Duration.Companion.seconds
@@ -120,7 +124,37 @@ class SignUp {
             "Check your email",
             Toast.LENGTH_LONG
         ).show()
-    }
+          val user = FirebaseAuth.getInstance().currentUser
+          val uid = user?.uid
+
+
+        try {
+                if (uid != null) {
+
+                    val db = Firebase.firestore
+                    val userDocRef = db.collection("users").document(uid)
+
+                    userDocRef.get().addOnSuccessListener { snapshot ->
+                        if (!snapshot.exists() || snapshot.get("Coins") == null) {
+                            userDocRef.update("Coins", 100)
+                                .addOnSuccessListener {
+                                    Log.d("firestore", "Coins field initialized to 100")
+                                }
+                                .addOnFailureListener {
+                                    // If update fails (e.g. field doesn't exist), use set() with merge
+                                    userDocRef.set(mapOf("Coins" to 100), SetOptions.merge())
+                                    Log.d("firestore", "Coins field added via set()")
+                                }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("firestore", "Error initializing Coins field", e)
+            }
+        }
+
+
+
 
     @Composable
     fun Create(modifier: Modifier = Modifier, navController: NavController) {

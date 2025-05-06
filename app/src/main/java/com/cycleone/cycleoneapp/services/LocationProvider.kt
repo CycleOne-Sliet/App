@@ -17,12 +17,17 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.google.firebase.auth.ktx.auth
+import com.google.firebase.auth.FirebaseAuth
+
+
+
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
 class LocationProvider : Service() {
+    private var auth = FirebaseAuth.getInstance()
+
 
     companion object {
         lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -34,6 +39,8 @@ class LocationProvider : Service() {
     private var serviceHandler: Handler? = null
 
     private var currentSession: DocumentReference? = null
+    private var lastLocation: Location? = null
+    private var totalDistance = 0f // in meters
 
     override fun onCreate() {
         super.onCreate()
@@ -68,8 +75,26 @@ class LocationProvider : Service() {
 
 
     private fun onNewLocation(location: Location) {
-        // Format and display location information
 
+        lastLocation?.let { previous ->
+            val distance = previous.distanceTo(location) // returns distance in meters
+            totalDistance += distance
+
+            println("Distance from last point: $distance meters")
+            println("Total Distance: $totalDistance meters")
+
+
+            // You can also store totalDistance in Firestore if needed
+            Firebase.firestore.collection("/distance_stats").add(
+                mapOf(
+                    "session" to currentSession,
+                    "distance_traveled" to totalDistance,
+                    "timestamp" to System.currentTimeMillis()
+                )
+            )
+        }
+        lastLocation = location // update last location
+        // Format and display location information
         Firebase.firestore.collection("/path_locations").add(
             mapOf(
                 Pair("session", currentSession),
@@ -102,8 +127,10 @@ class LocationProvider : Service() {
                 Manifest.permission.ACCESS_BACKGROUND_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
+
+
             // Use the serviceLooper (background looper) here
-            Firebase.auth.currentUser?.let { user ->
+            FirebaseAuth.getInstance().currentUser?.let { user ->
                 Firebase.firestore.collection("/sessions").add(
                     mapOf(
                         Pair("user", user.uid),
@@ -134,6 +161,20 @@ class LocationProvider : Service() {
         serviceLooper?.quitSafely() // Quit the background looper thread
         serviceLooper = null
         serviceHandler = null
+
+        currentSession?.update("totalDistance", totalDistance)
+
+        // Add totalDistance to user’s cumulative distance
+
+        FirebaseAuth.getInstance().currentUser?.let { user ->
+            val userDoc = Firebase.firestore.collection("users").document(user.uid)
+
+            Firebase.firestore.runTransaction { transaction ->
+                val snapshot = transaction.get(userDoc)
+                val previousTotal = snapshot.getDouble("totalDistance") ?: 0.0
+                transaction.update(userDoc, "totalDistance", previousTotal + totalDistance)
+            }
+        }
         super.onDestroy()
     }
 

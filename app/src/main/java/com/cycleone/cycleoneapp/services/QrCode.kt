@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.coroutineScope
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -52,6 +53,7 @@ class QrCode : Application() {
             var errorText: String? by remember {
                 mutableStateOf(null)
             }
+            val lifecycleCoroutineScope = lifecycleOwner.lifecycle.coroutineScope
             if (errorText != null) {
                 BasicAlertDialog(onDismissRequest = {
                     errorText = null
@@ -78,7 +80,12 @@ class QrCode : Application() {
                         COORDINATE_SYSTEM_VIEW_REFERENCED,
                         ContextCompat.getMainExecutor(context)
                     ) { result: MlKitAnalyzer.Result? ->
+                        Log.d("MLKit", "Analyzer triggered")
                         val barcodeResults = result?.getValue(barcodeScanner)
+                        // Log.d("MLKit2", "Barcodes: $barcodeResults")
+                        val result2 = barcodeResults?.firstOrNull()?.rawValue
+                        Log.d("MLKit2", "Detected QR code value: $result2")
+
                         // Validating the results
                         if ((barcodeResults == null) ||
                             (barcodeResults.size == 0) ||
@@ -92,40 +99,42 @@ class QrCode : Application() {
                             Log.d("Scanned QR", it)
                             if (qrScanned == 0) {
                                 qrScanned++
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    NavProvider.showDebugModal()
-                                    coroutineScope.launch(CoroutineExceptionHandler { _, throwable ->
-                                        Log.e("FancyBtnExceptionMsg", throwable.message.toString())
-                                        Log.e("FancyBtnExceptionCause", throwable.cause.toString())
+                                lifecycleCoroutineScope.launch(CoroutineExceptionHandler { _, throwable ->
+                                    Log.e("FancyBtnExceptionMsg", throwable.message.toString())
+                                    Log.e("FancyBtnExceptionCause", throwable.cause.toString())
+                                    Log.e(
+                                        "FancyBtnExceptionTrace",
+                                        throwable.stackTraceToString()
+                                    )
+                                    errorText = throwable.message
+                                    qrScanned--
+                                }) {
+                                    try {
+                                        Log.d("MLKitAnalyzer2", "Barcode results")
+                                        onSuccess(it)
+                                        Log.d("MLKitAnalyzer", "Barcode results: $barcodeResults")
+                                        delay(1000L)
+                                        errorText = null
+                                        qrScanned--
+                                    } catch (throwable: Throwable) {
+                                        errorText = throwable.message
+                                        qrScanned--
                                         Log.e(
-                                            "FancyBtnExceptionTrace",
+                                            "FancyBtnExceptionMsgCatch",
+                                            throwable.message.toString()
+                                        )
+                                        Log.e(
+                                            "FancyBtnExceptionCauseCatch",
+                                            throwable.cause.toString()
+                                        )
+                                        Log.e(
+                                            "FancyBtnExceptionTraceCatch",
                                             throwable.stackTraceToString()
                                         )
-                                        errorText = throwable.message
-                                    }) {
-                                        try {
-                                            onSuccess(it)
-                                            delay(1000L)
-                                            errorText = null
-                                            qrScanned--
-                                        } catch (throwable: Throwable) {
-                                            errorText = throwable.message
-                                            Log.e(
-                                                "FancyBtnExceptionMsgCatch",
-                                                throwable.message.toString()
-                                            )
-                                            Log.e(
-                                                "FancyBtnExceptionCauseCatch",
-                                                throwable.cause.toString()
-                                            )
-                                            Log.e(
-                                                "FancyBtnExceptionTraceCatch",
-                                                throwable.stackTraceToString()
-                                            )
-                                        }
                                     }
                                 }
                             }
+
                         }
                     }
                 )

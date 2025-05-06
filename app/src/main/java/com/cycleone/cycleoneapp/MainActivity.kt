@@ -62,6 +62,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.cycleone.cycleoneapp.services.CachedNetworkClient
 import com.cycleone.cycleoneapp.services.LocationProvider
+import com.cycleone.cycleoneapp.services.LocationScreen
 import com.cycleone.cycleoneapp.services.NavProvider
 import com.cycleone.cycleoneapp.ui.components.FancyButton
 import com.cycleone.cycleoneapp.ui.components.NormalBackground
@@ -200,8 +201,8 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
                 backgroundImage = R.drawable.normal_background
                 AllLocations().Create(modifier, navController)
             }
-            composable("/feedbackPage") {
-                showTopBar = true
+            composable("/feedback_page") {
+                showTopBar = false
                 showBottomBar = true
                 backgroundImage = R.drawable.normal_background
                 FeedbackScreen(modifier, navController)
@@ -218,11 +219,17 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
                 backgroundImage = R.drawable.normal_background
                 HistoryScreen(modifier, navController)
             }
-            composable("/coinpage") {
+            composable("/coin_page") {
                 showTopBar = true
                 showBottomBar = true
                 backgroundImage = R.drawable.normal_background
                 CoinPage(modifier, navController)
+            }
+            composable("/location_page") {
+                showTopBar = true
+                showBottomBar = true
+                backgroundImage = R.drawable.normal_background
+                LocationScreen( navController)
             }
 
         }

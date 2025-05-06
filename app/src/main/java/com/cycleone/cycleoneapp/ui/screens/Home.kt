@@ -7,16 +7,32 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,6 +64,7 @@ import ovh.plrapps.mapcompose.api.scrollTo
 
 class Home {
 
+
     @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     fun Create(
@@ -55,23 +72,24 @@ class Home {
         authInstance: FirebaseAuth? = FirebaseAuth.getInstance(),
         navController: NavController
     ) {
-        var username by remember { mutableStateOf("") }
+        var username by remember {
+            mutableStateOf("")
+        }
 
         if (ActivityCompat.checkSelfPermission(
                 LocalContext.current,
                 Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
                 LocalContext.current,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // Handle permissions
-        }
 
+        }
         if (authInstance != null) {
             val user = authInstance.currentUser
             username = user?.displayName ?: ""
+            Log.d("User", user.toString())
             if (user == null) {
                 navController.navigate("/sign_in")
             }
@@ -83,8 +101,7 @@ class Home {
                 Manifest.permission.ACCESS_FINE_LOCATION,
             )
         )
-
-        UI(modifier, username, permissionStates, navController)
+        UI(modifier, username, permissionStates, navController = navController)
     }
 
     @SuppressLint("MissingPermission")
@@ -97,14 +114,15 @@ class Home {
         permissionState: MultiplePermissionsState = rememberMultiplePermissionsState(listOf()),
         navController: NavController = rememberNavController()
     ) {
-        val mapDisplay by remember { mutableStateOf(MapDisplay()) }
+        val mapDisplay by remember {
+            mutableStateOf(MapDisplay())
+        }
+
         val coroutineScope = rememberCoroutineScope()
 
-        val recentStandName = remember { mutableStateOf("Campus Main Gate") }
-        val recentStandNumber = remember { mutableStateOf("Stand #12") }
-
         Column(
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier
+                .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
@@ -115,153 +133,188 @@ class Home {
                     .fillMaxWidth()
             ) {
                 Button(
+                    enabled = true,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     onClick = {
+                        Log.d("coroutine", "Launched NavProvider Coroutine")
                         coroutineScope.launch {
-                            NavProvider.drawer?.open()
+                            Log.d("drawer", "Launched drawer open Coroutine")
+                            if (NavProvider.drawer == null) {
+                                Log.d("drawer", "Drawer is null")
+                            } else {
+                                Log.d("drawer", "Drawer is not null")
+                            }
+                            NavProvider.drawer!!.open()
+                            Log.d("coroutine", "Launched completed drawer open Coroutine")
                         }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
-                ) {
+                        Log.d("coroutine", "Launched completed NavProvider Coroutine")
+                    }) {
                     Image(
                         painter = painterResource(R.drawable.menu),
-                        contentDescription = "Menu",
-                        modifier = Modifier.size(32.dp)
+                        "Menu",
+                        modifier = Modifier
+                            .width(32.dp)
+                            .height(32.dp)
                     )
                 }
                 Image(
-                    painter = painterResource(R.drawable.logo_cycleone_new_01),
-                    contentDescription = "Logo",
-                    modifier = Modifier.size(width = 58.dp, height = 37.dp)
+                    painter = painterResource(R.drawable.logo_cycleone_new_1),
+                    "Logo",
+                    modifier = Modifier
+                        .width(58.dp)
+                        .height(37.dp)
                 )
-                Button(
-                    onClick = { navController.navigate("/history") }
-                ) {
+                Button(enabled = true, onClick = { navController.navigate("/coin_page") }) {
                     Image(
                         painter = painterResource(R.drawable.vector_1_),
-                        contentDescription = "History",
-                        modifier = Modifier.size(32.dp)
+                        "Menu",
+                        modifier = Modifier
+                            .width(32.dp)
+                            .height(32.dp)
                     )
                 }
-                Button(
-                    onClick = { navController.navigate("/coinpage") },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
-                ) {
-                    Icon(Icons.Default.AccountBalance, contentDescription = "coin")
-                }
             }
-
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                Text(
-                    "Hello !!!",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = monsterratFamily,
-                    color = Color.White,
-                    modifier = Modifier.padding(bottom = 5.dp)
-                )
-                Text(
-                    username,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Light,
-                    fontFamily = monsterratFamily,
-                    color = Color.White
-                )
-
-                // Recent Accessed Stand Section
-                Text(
-                    "Recent Cycle Accessed",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = monsterratFamily,
-                    color = Color.White,
-                    modifier = Modifier.padding(top = 15.dp, bottom = 8.dp)
-                )
-                Button(
-                    onClick = {
-                        // Add your future navigation logic here
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.dp, Color.White, RoundedCornerShape(10.dp))
-                        .background(Color(0xff252322)),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = recentStandName.value,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            fontFamily = monsterratFamily,
-                            color = Color.White
-                        )
-                        Text(
-                            text = recentStandNumber.value,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Light,
-                            fontFamily = monsterratFamily,
-                            color = Color.Gray
-                        )
-                    }
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "Hello !!!",
+                        modifier = Modifier.padding(bottom = 5.dp),
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = monsterratFamily,
+                        color = Color.White
+                    )
+                    Text(
+                        username,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Light,
+                        fontFamily = monsterratFamily,
+                        color = Color.White
+                    )
+                    Text(
+                        "Your last session",
+                        modifier = Modifier.padding(vertical = 15.dp),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = monsterratFamily,
+                        color = Color.White
+                    )
                 }
-
-                // Location Map Section
                 Column(
                     modifier = Modifier
                         .border(2.dp, Color.White, RoundedCornerShape(10.dp))
-                        .background(Color(0xff252322))
-                        .padding(15.dp)
+                        .background(Color(0xff252322)),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
                         modifier = Modifier
+                            .padding(15.dp)
                             .fillMaxWidth()
                             .heightIn(min = 250.dp, max = 300.dp)
-                            .border(2.dp, Color.White, RoundedCornerShape(5.dp))
+                            .border(2.dp, Color.White, RoundedCornerShape(5.dp)),
                     ) {
                         if (permissionState.allPermissionsGranted) {
                             LocationProvider.fusedLocationClient.getCurrentLocation(
                                 CurrentLocationRequest.Builder()
                                     .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                                    .setGranularity(Granularity.GRANULARITY_FINE)
-                                    .build(), null
+                                    .setGranularity(Granularity.GRANULARITY_FINE).build(), null
                             ).addOnSuccessListener {
-                                it?.let { location ->
-                                    val coords = mapDisplay.locationToNormalizedCoords(location)
+                                if (it != null) {
+                                    Log.d("location", it.toString())
+                                    val location = mapDisplay.locationToNormalizedCoords(it)
+                                    Log.d("normLocation", location.toString())
                                     coroutineScope.launch {
-                                        mapDisplay.state.scrollTo(coords.first, coords.second, 0.15f)
+                                        mapDisplay.state.scrollTo(
+                                            0.0,
+                                            0.0,
+                                        )
+
+                                        mapDisplay.state.scrollTo(
+                                            location.first,
+                                            location.second,
+                                            0.15f
+                                        )
                                         mapDisplay.state.addMarker(
                                             "Current Location",
-                                            coords.first,
-                                            coords.second
+                                            location.first,
+                                            location.second
                                         ) {
-                                            Icon(Icons.Default.Person, contentDescription = "Location")
+                                            Icon(Icons.Default.Person, "Current Location")
                                         }
                                     }
                                 }
                             }
-                            mapDisplay.Create(modifier = Modifier.fillMaxSize())
+                            mapDisplay.Create(
+                                modifier = Modifier.fillMaxSize()
+                            )
                         } else {
+
                             Column {
-                                val message = if (permissionState.shouldShowRationale) {
+                                val textToShow = if (permissionState.shouldShowRationale) {
                                     "The location permission is required to show current location"
                                 } else {
-                                    "Without these permissions, the app cannot function properly.\nPlease grant the permissions."
+                                    "Without these permission, the app cannot function" +
+                                            "Please grant the permissions\n" + "The location will be logged"
                                 }
-                                Text(message, color = Color.White)
-                                Button(onClick = { permissionState.launchMultiplePermissionRequest() }) {
+                                Text(textToShow)
+                                Button(
+                                    onClick = { permissionState.launchMultiplePermissionRequest() }) {
                                     Text("Request location permissions")
                                 }
                             }
                         }
+
+                    }
+
+
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .padding(15.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        /*
+                        Column {
+                            Text(
+                                "Distance",
+                                fontFamily = monsterratFamily,
+                                fontSize = 20.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.Light
+                            )
+                            Text(
+                                "2.67Km",
+                                color = Color(0xffff6b35),
+                                fontFamily = monsterratFamily,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 24.sp
+                            )
+                        }
+                        Column {
+                            Text(
+                                "Time",
+                                fontFamily = monsterratFamily,
+                                fontSize = 20.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.Light
+                            )
+                            Text(
+                                "27 min",
+                                color = Color(0xffff6b35),
+                                fontFamily = monsterratFamily,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 24.sp
+                            )
+                        }
+                        */
                     }
                 }
             }
 
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.8f)
+                    .fillMaxWidth(0.8F)
                     .height(90.dp),
                 contentAlignment = Alignment.BottomCenter
             ) {
@@ -271,20 +324,22 @@ class Home {
                         .background(Color(0xff252322))
                         .border(3.dp, Color(0xffff6b35), RoundedCornerShape(10.dp))
                         .padding(horizontal = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    Arrangement.SpaceBetween,
+                    Alignment.CenterVertically
                 ) {
                     Button(
-                        onClick = { navController.navigate("/notification") },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+                        onClick = {navController.navigate("/location_page")},
+                        colors = ButtonDefaults.buttonColors()
+                            .copy(containerColor = Color.Transparent)
                     ) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notification")
+                        Icon(Icons.Default.Notifications, "Notification")
                     }
                     Button(
-                        onClick = { navController.navigate("/feedbackPage") },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+                        onClick = {navController.navigate("/feedback_page")},
+                        colors = ButtonDefaults.buttonColors()
+                            .copy(containerColor = Color.Transparent)
                     ) {
-                        Icon(Icons.Default.Phone, contentDescription = "Phone")
+                        Icon(Icons.Default.Phone, "Phone")
                     }
                 }
 
@@ -295,17 +350,20 @@ class Home {
                         .fillMaxHeight()
                         .border(3.dp, Color(0xffff6b35), RoundedCornerShape(10.dp)),
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xff252322))
+                    colors = ButtonDefaults.buttonColors()
+                        .copy(containerColor = Color(0xff252322))
                 ) {
                     Image(
                         painter = painterResource(R.drawable.qr_code_1_),
-                        contentDescription = "Scan",
+                        "Scan",
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .padding(vertical = 6.dp)
-                            .size(56.dp)
+                            .width(56.dp)
+                            .height(56.dp)
                     )
                 }
+
             }
         }
     }

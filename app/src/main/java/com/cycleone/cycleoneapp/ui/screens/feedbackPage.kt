@@ -40,6 +40,7 @@ import com.cycleone.cycleoneapp.services.Feedback
 
 import com.cycleone.cycleoneapp.services.mapMessageToFirestoreMap
 import com.cycleone.cycleoneapp.uri
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlin.random.Random
@@ -51,8 +52,9 @@ fun FeedbackScreen(modifier: Modifier = Modifier, navController: NavController) 
     var message by remember { mutableStateOf("") }
     val messages = remember { mutableStateListOf<Pair<String, Uri?>>() }
     var showAttachmentOptions by remember { mutableStateOf(false) }
-    val database = FirebaseDatabase.getInstance()
-    val feedbackRef = database.getReference("feedbacks")
+
+    val uid = FirebaseAuth.getInstance().currentUser?.uid
+
 
 
     val context = LocalContext.current
@@ -113,7 +115,11 @@ fun FeedbackScreen(modifier: Modifier = Modifier, navController: NavController) 
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Feedback Page", color = Color.White, style = MaterialTheme.typography.titleLarge)
+                        IconButton(onClick = {navController.navigateUp()}) {
+                            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        }
+                        Text("Feedback Page", color = Color.White, style = MaterialTheme.typography.titleLarge,
+                           /* modifier = Modifier.padding(start = 25.dp)*/)
                         IconButton(
                             onClick = {
                                 val intent = Intent(Intent.ACTION_DIAL).apply {
@@ -234,6 +240,7 @@ fun FeedbackScreen(modifier: Modifier = Modifier, navController: NavController) 
                                     textStyle = LocalTextStyle.current.copy(color = Color.White)
                                 )
                             }
+                            Spacer(modifier = Modifier.width(7.dp))
 
                             IconButton(
                                 onClick = { showAttachmentOptions = !showAttachmentOptions },
@@ -249,29 +256,32 @@ fun FeedbackScreen(modifier: Modifier = Modifier, navController: NavController) 
                             IconButton(
                                 onClick = {
 
-                                      /*  if (message.isNotBlank()) {
+                                        if (message.isNotBlank()) {
                                             // Add to local list
                                             messages.add(message to null)
-
-                                            // Push to Firebase
-                                            val feedback = Feedback(message = message)
-                                            feedbackRef.push().setValue(feedback)
-
-                                            // Clear the input
-                                            message = ""
-                                        }*/
-
-                                    val db = FirebaseFirestore.getInstance()
-                                    val feedbackMap = mapMessageToFirestoreMap(message = message, uri = uri?.toString())
-
-                                    db.collection("feedbacks")
-                                        .add(feedbackMap)
-                                        .addOnSuccessListener {
-                                            Log.d("Firestore", "Feedback added successfully")
                                         }
-                                        .addOnFailureListener { e ->
-                                            Log.e("Firestore", "Error adding feedback", e)
-                                        }
+
+                                    if (uid != null) {
+                                        val db = FirebaseFirestore.getInstance()
+                                        val feedbackMap = mapMessageToFirestoreMap(message = message, uri = uri?.toString())
+
+                                        db.collection("users")
+                                            .document(uid)
+                                            .collection("feedbacks") // subcollection under user
+                                            .add(feedbackMap)
+                                            .addOnSuccessListener {
+                                                Log.d("firestore", "Feedback added successfully for UID: $uid")
+                                            }
+                                            .addOnFailureListener { e ->
+                                                Log.e("firestore", "Error adding feedback for UID: $uid", e)
+                                            }
+                                    } else {
+                                        Log.e("firestore", "User is not logged in")
+                                    }
+                                    // Clear the input
+                                    message = ""
+
+
 
 
                                 },

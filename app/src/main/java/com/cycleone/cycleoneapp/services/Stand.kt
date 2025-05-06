@@ -22,8 +22,6 @@ import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.core.content.ContextCompat.startActivity
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
-import com.squareup.moshi.FromJson
-import com.squareup.moshi.ToJson
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import okio.ByteString.Companion.readByteString
@@ -100,33 +98,6 @@ sealed class Response {
 
 data class ResponseJson(val isUnlocked: Boolean?, val cycleId: String?, val error: String?)
 
-// Adaptor for parsing the json returned from stand
-// If clarification needed, go to the moshi documentation on github
-class ResponseAdapter {
-    @ToJson
-    fun toJson(resp: Response): ResponseJson {
-        return when (resp) {
-            is Response.Ok -> ResponseJson(resp.isUnlocked, resp.cycleId, null)
-            is Response.Err -> ResponseJson(null, null, resp.error)
-        }
-    }
-
-    @FromJson
-    fun fromJson(response: ResponseJson): Response {
-        return if (response.isUnlocked != null) {
-            Response.Ok(
-                isUnlocked = response.isUnlocked,
-                cycleId = response.cycleId
-            )
-        } else if (response.error != null) {
-            Response.Err(response.error)
-        } else {
-            Response.Err("Json does contain the required fields")
-        }
-    }
-}
-
-@OptIn(ExperimentalStdlibApi::class)
 class Stand : Application() {
     companion object {
         // preserving state between function calls

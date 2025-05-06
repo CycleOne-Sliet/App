@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.net.MacAddress
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,13 +46,15 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.security.InvalidParameterException
 
 fun decodeHexFromStr(hex: String): ByteArray {
     if (hex.length % 2 != 0) {
-        throw InvalidParameterException("Fking wrong length of hex: ${hex.length}")
+        throw InvalidParameterException("Fetching wrong length of hex: ${hex.length}")
     }
     return ByteArray(hex.length / 2) {
         Integer.parseInt(hex, it * 2, (it + 1) * 2, 16).toByte()
@@ -86,6 +90,9 @@ class UnlockScreen {
         var userCycleId: Long? by remember {
             mutableStateOf(null)
         }
+
+        val coroutineScope = rememberCoroutineScope()
+
         Firebase.firestore.collection("users").document(uid).get()
             .addOnSuccessListener {
                 userHasCycle = it.data?.get("HasCycle") as Boolean?
@@ -108,27 +115,103 @@ class UnlockScreen {
                 Manifest.permission.ACCESS_COARSE_LOCATION,
             )
         )
+
+
+
+
         UI(
             modifier,
             user = user,
+            onVerificationRequest = {
+                navController.navigate("/profile")
+            },
             onScanSuccess = { qr ->
+
                 showCamera = false
+                Log.d("code", "camera false")
                 if (!user.isEmailVerified) {
+
+                    Toast.makeText(context, "Email is not verified", Toast.LENGTH_SHORT).show()
                     return@UI
                 }
-                userHasCycle = (Firebase.firestore.collection("users").document(uid).get()
-                    .await().data?.get("HasCycle") ?: true) as Boolean?
-                if (userHasCycle == null) {
-                    return@UI
+              //  val userDocRef = Firebase.firestore.collection("users").document(uid)
+              //  val userSnap2 = userDocRef.get().await()
+             /*   val userSnap = Firebase.firestore.collection("users").document(uid).get().addOnSuccessListener {userSnap ->
+                    val userSnapData = userSnap?.data
+                    val currentCoins = (userSnapData?.get("Coins") as? Long ?: 0L).toInt()
+                    Log.d("currentCoins", currentCoins.toString())
+
+                    if ( currentCoins < 5) {
+                        Toast.makeText(context, "You need at least 5 coins to unlock a cycle", Toast.LENGTH_LONG).show()
+                        return@addOnSuccessListener
+                    }
+
+                    userHasCycle = userSnap.data?.get("HasCycle") as? Boolean ?: false
+
+                    triggerStandSeq(
+                        qr,
+                        context, userHasCycle
+                    )
+
+                }*/
+
+               // val currentCoins = (userSnapData?.get("Coins")  as Int )
+
+           //     userHasCycle = (userSnap2.get("HasCycle") ?: true) as Boolean?
+
+
+
+                // Deduct 5 coins
+           //     val updatedCoins= currentCoins - 5
+         //       userSnap.reference.update("Coins", updatedCoins).await()
+        //        userHasCycle = (Firebase.firestore.collection("users").document(uid).get()
+            //        .await().data?.get("HasCycle") ?: true) as Boolean?
+
+           //     triggerStandSeq(
+          //          qr,
+           //         context, userHasCycle
+           //     )
+             //   val userSnap = Firebase.firestore.collection("users").document(uid).get().await()
+             //   if (userSnap.data?.get("HasCycle") != null) {
+             //       userHasCycle = userSnap.data?.get("HasCycle")!! as Boolean
+             //   }
+
+                coroutineScope.launch {
+                    try {
+                        val userSnap = Firebase.firestore.collection("users").document(uid).get().await()
+                        val userSnapData = userSnap.data
+                        val currentCoins = (userSnapData?.get("Coins") as? Long ?: 0L).toInt()
+
+                        Log.d("currentCoins", currentCoins.toString())
+
+                        if (currentCoins < 5) {
+                            Toast.makeText(context, "You need at least 5 coins to unlock a cycle", Toast.LENGTH_LONG).show()
+                            return@launch
+                        }
+
+
+
+                        userHasCycle = Firebase.firestore.collection("users")
+                            .document(uid).get().await().data?.get("HasCycle") as? Boolean
+
+                        triggerStandSeq(qr, context, userHasCycle)
+                        Log.d("userHasCycle", userHasCycle.toString())
+
+                        // Deduct 5 coins
+                        val updatedCoins = currentCoins - 5
+                        userSnap.reference.update("Coins", updatedCoins).await()
+
+                        val updatedSnap = Firebase.firestore.collection("users").document(uid).get().await()
+                        if (updatedSnap.data?.get("HasCycle") != null) {
+                            userHasCycle = updatedSnap.data?.get("HasCycle") as Boolean
+                        }
+
+                    } catch (e: Exception) {
+                        Log.e("onScanSuccess", "Error: ${e.message}", e)
+                        Toast.makeText(context, "Something went wrong: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
                 }
-                triggerStandSeq(
-                    qr,
-                    context, userHasCycle
-                )
-                val userSnap = Firebase.firestore.collection("users").document(uid).get().await()
-                if (userSnap.data?.get("HasCycle") != null) {
-                    userHasCycle = userSnap.data?.get("HasCycle")!! as Boolean
-                }
+
             },
             showCamera = showCamera,
             permissionState = permissionStates,
@@ -153,6 +236,7 @@ class UnlockScreen {
     fun UI(
         modifier: Modifier = Modifier,
         onScanSuccess: suspend (String) -> Unit = {},
+        onVerificationRequest: () -> Unit = {},
         permissionState: MultiplePermissionsState = rememberMultiplePermissionsState(listOf()),
         showCamera: Boolean = false,
         buttonClick: suspend () -> Unit = {},
@@ -213,26 +297,38 @@ class UnlockScreen {
                                     modifier = Modifier.width(64.dp),
                                 )
                             } else {
-                                Text(
-                                    "Scan QR Code to \nUnlock",
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(bottom = 20.dp)
-                                )
-                                FancyButton(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = {
-                                        buttonClick()
-                                    }) { loading ->
-                                    if (loading) {
-                                        CircularProgressIndicator()
-                                    } else {
-                                        if (userHasCycle == true) {
-                                            Text("Scan to return cycle")
+                                if (user?.isEmailVerified == true) {
+                                    Text(
+                                        "Scan QR Code to \nUnlock",
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(bottom = 20.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        "Your email is not verified, resend verification link by going to the profile section",
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(bottom = 20.dp)
+                                    )
+                                }
+                                if (user?.isEmailVerified == true) {
+                                    FancyButton(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onClick = {
+                                            buttonClick()
+                                        }) { loading ->
+                                        if (loading) {
+                                            CircularProgressIndicator()
                                         } else {
-                                            Text("Scan to unlock cycle")
+                                            if (userHasCycle == true) {
+                                                Text("Scan to return cycle")
+                                            } else {
+                                                Text("Scan to unlock cycle")
+                                            }
+                                            Icon(Icons.Default.Search, "QR")
                                         }
-                                        Icon(Icons.Default.Search, "QR")
                                     }
+                                } else {
+                                    FancyButton(modifier = Modifier.fillMaxWidth(), onClick  = {onVerificationRequest()})
                                 }
                             }
                         } else {
@@ -264,16 +360,21 @@ class UnlockScreen {
         userHasCycle: Boolean?,
     ) {
         val macHex = decodeHexFromStr(qrCode.trim())
+        Log.d("qrcode","qr is $macHex")
         if (macHex.size != 6) {
             Log.e("DecodingQr", "Fked Up: Invalid Qr Code")
             throw Error("Invalid QR Code")
         }
+
         val mac: MacAddress = MacAddress.fromBytes(macHex)
         NavProvider.addLogEntry("Mac Address: $mac")
+        Log.d("macad2","stand Connected $mac")
         try {
             val socket = Stand.connect(
                 mac, context
+
             )
+            Log.d("macad","stand Connected")
             if (socket == null) {
                 throw Error("Couldn't connect to WiFi")
             }
