@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CurrencyRupee
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
@@ -164,7 +165,7 @@ class Home {
                         .width(58.dp)
                         .height(37.dp)
                 )
-                Button(enabled = true, onClick = { navController.navigate("/coin_page") }) {
+                Button(enabled = false, onClick = {  }) {
                     Image(
                         painter = painterResource(R.drawable.vector_1_),
                         "Menu",
@@ -328,11 +329,11 @@ class Home {
                     Alignment.CenterVertically
                 ) {
                     Button(
-                        onClick = {navController.navigate("/location_page")},
+                        onClick = {navController.navigate("/coin_page")},
                         colors = ButtonDefaults.buttonColors()
                             .copy(containerColor = Color.Transparent)
                     ) {
-                        Icon(Icons.Default.Notifications, "Notification")
+                        Icon(Icons.Default.CurrencyRupee, "Coins")
                     }
                     Button(
                         onClick = {navController.navigate("/feedback_page")},
