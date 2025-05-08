@@ -204,8 +204,12 @@ class UnlockScreen {
                             Log.d("userHasCycle", userHasCycle.toString())
 
                             // Deduct 5 coins
+                            if (userHasCycle == true){
+
                             val updatedCoins = currentCoins - 5
                             userSnap.reference.update("Coins", updatedCoins).await()
+
+                            }
 
                             val updatedSnap = Firebase.firestore.collection("users").document(uid).get().await()
                             if (updatedSnap.data?.get("HasCycle") != null) {

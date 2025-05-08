@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,6 +82,7 @@ import com.cycleone.cycleoneapp.ui.screens.SignIn
 import com.cycleone.cycleoneapp.ui.screens.SignUp
 import com.cycleone.cycleoneapp.ui.screens.UnlockScreen
 import com.cycleone.cycleoneapp.ui.theme.CycleoneAppTheme
+import com.cycleone.cycleoneapp.ui.theme.monsterratFamily
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -290,8 +292,11 @@ fun MainScaffold(
                                     Image(painterResource(R.drawable.left_arrow), "Back",
                                        colorFilter = ColorFilter.tint(color = Color.Black) )
                                 }
-                                Text(text = "CycleOne", fontSize = 64.sp,
-                                    color = Color.Black)
+                                Text(text = "CycleOne", fontSize = 52.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontFamily = monsterratFamily,
+                                    color = Color.Black,
+                                    modifier = Modifier.padding(start=25.dp))
                             }
 
 
@@ -327,7 +332,7 @@ fun MainScaffold(
                             )
 
                         }
-                        FancyButton(modifier = Modifier.fillMaxWidth(), text = "Logout", onClick = {
+                        FancyButton(modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp), text = "Logout", onClick = {
                             FirebaseAuth.getInstance().signOut()
                             coroutineScope.launch {
                                 drawerState.close()
