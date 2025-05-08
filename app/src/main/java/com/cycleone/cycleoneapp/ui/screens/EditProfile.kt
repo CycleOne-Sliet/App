@@ -93,7 +93,7 @@ class EditProfile {
                         password
                     )
                 )
-            } catch (e: FirebaseAuthException) {
+            } catch (e: Throwable) {
                 throw Error(e.message)
             }
         }
@@ -143,7 +143,7 @@ class EditProfile {
                     .set(userData, SetOptions.merge())
                     .await()
                 Log.d("EditProfile", "Custom fields saved to Firestore: $userData")
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.e("EditProfile", "Failed to update custom fields: ${e.message}")
             }
         }

@@ -49,7 +49,7 @@ fun CoinPage(modifier: Modifier = Modifier, navController: NavController = remem
             } else {
                 errorMessage = "Coins field missing"
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             errorMessage = "Failed to fetch coins: ${e.message}"
         } finally {
             isLoading = false

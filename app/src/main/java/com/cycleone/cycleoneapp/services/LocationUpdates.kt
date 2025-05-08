@@ -130,7 +130,7 @@ fun getAddressFromLocation(context: Context, latitude: Double, longitude: Double
         } else {
             "Address not found"
         }
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         e.printStackTrace()
         "Error fetching address"
     }

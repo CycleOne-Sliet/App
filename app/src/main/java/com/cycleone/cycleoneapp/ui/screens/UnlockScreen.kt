@@ -212,7 +212,7 @@ class UnlockScreen {
                                 userHasCycle = updatedSnap.data?.get("HasCycle") as Boolean
                             }
 
-                        } catch (e: Exception) {
+                        } catch (e: Throwable) {
                             Log.e("onScanSuccess", "Error: ${e.message}", e)
                             Toast.makeText(context, "Something went wrong: ${e.message}", Toast.LENGTH_LONG).show()
                         }
@@ -396,7 +396,7 @@ class UnlockScreen {
             val standToken = Stand.trigger(socket, cloudToken)
             CloudFunctions.putToken(standToken)
             Stand.disconnect()
-        } catch (e: Error) {
+        } catch (e: Throwable) {
             Stand.disconnect()
             throw Error(e.message)
         }

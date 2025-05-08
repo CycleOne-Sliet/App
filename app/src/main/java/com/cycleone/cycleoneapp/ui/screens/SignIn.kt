@@ -53,7 +53,7 @@ class SignIn {
             } else {
                 navController.navigate("/home")
             }
-        } catch (e: FirebaseAuthException) {
+        } catch (e: Throwable) {
             throw Error(e.message)
         }
     }

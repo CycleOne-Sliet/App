@@ -92,7 +92,7 @@ class SignUp {
                 FirebaseAuth.getInstance()
                     .createUserWithEmailAndPassword(email.filterNot { it.isWhitespace() }, it)
                     .await()
-            } catch (e: FirebaseAuthException) {
+            } catch (e: Throwable) {
                 throw Error(e.message)
             }
         }
@@ -109,7 +109,7 @@ class SignUp {
                 UserProfileChangeRequest.Builder().setDisplayName(name)
                     .build()
             )?.await()
-        } catch (e: FirebaseAuthException) {
+        } catch (e: Throwable) {
             throw Error(e.message)
         }
 
@@ -148,7 +148,7 @@ class SignUp {
                         }
                     }
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.e("firestore", "Error initializing Coins field", e)
             }
         }
