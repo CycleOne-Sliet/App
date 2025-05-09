@@ -3,7 +3,6 @@ package com.cycleone.cycleoneapp.ui.screens
 import android.content.Context
 import android.util.Log
 import android.util.Patterns
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme

@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.net.MacAddress
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -139,47 +138,6 @@ class UnlockScreen {
                     Toast.makeText(context, "Email is not verified", Toast.LENGTH_SHORT).show()
                     return@UI
                 }
-              //  val userDocRef = Firebase.firestore.collection("users").document(uid)
-              //  val userSnap2 = userDocRef.get().await()
-             /*   val userSnap = Firebase.firestore.collection("users").document(uid).get().addOnSuccessListener {userSnap ->
-                    val userSnapData = userSnap?.data
-                    val currentCoins = (userSnapData?.get("Coins") as? Long ?: 0L).toInt()
-                    Log.d("currentCoins", currentCoins.toString())
-
-                    if ( currentCoins < 5) {
-                        Toast.makeText(context, "You need at least 5 coins to unlock a cycle", Toast.LENGTH_LONG).show()
-                        return@addOnSuccessListener
-                    }
-
-                    userHasCycle = userSnap.data?.get("HasCycle") as? Boolean ?: false
-
-                    triggerStandSeq(
-                        qr,
-                        context, userHasCycle
-                    )
-
-                }*/
-
-               // val currentCoins = (userSnapData?.get("Coins")  as Int )
-
-           //     userHasCycle = (userSnap2.get("HasCycle") ?: true) as Boolean?
-
-
-
-                // Deduct 5 coins
-           //     val updatedCoins= currentCoins - 5
-         //       userSnap.reference.update("Coins", updatedCoins).await()
-        //        userHasCycle = (Firebase.firestore.collection("users").document(uid).get()
-            //        .await().data?.get("HasCycle") ?: true) as Boolean?
-
-           //     triggerStandSeq(
-          //          qr,
-           //         context, userHasCycle
-           //     )
-             //   val userSnap = Firebase.firestore.collection("users").document(uid).get().await()
-             //   if (userSnap.data?.get("HasCycle") != null) {
-             //       userHasCycle = userSnap.data?.get("HasCycle")!! as Boolean
-             //   }
 
                 lifecycleCoroutineScope.launch {
                     withContext(Dispatchers.IO) {
@@ -191,7 +149,7 @@ class UnlockScreen {
                             Log.d("currentCoins", currentCoins.toString())
 
                             if (currentCoins < 5) {
-                                Toast.makeText(context, "You need at least 5 coins to unlock a cycle", Toast.LENGTH_LONG).show()
+                                //Toast.makeText(context, "You need at least 5 coins to unlock a cycle", Toast.LENGTH_LONG).show()
                                 return@withContext
                             }
 
@@ -218,7 +176,7 @@ class UnlockScreen {
 
                         } catch (e: Throwable) {
                             Log.e("onScanSuccess", "Error: ${e.message}", e)
-                            Toast.makeText(context, "Something went wrong: ${e.message}", Toast.LENGTH_LONG).show()
+                            //Toast.makeText(context, "Something went wrong: ${e.message}", Toast.LENGTH_LONG).show()
                         }
 
                     }
@@ -389,11 +347,6 @@ class UnlockScreen {
             Log.d("macad","stand Connected")
             if (socket == null) {
                 throw Error("Couldn't connect to WiFi")
-            }
-            val standIsUnlocked = Stand.isUnlocked(socket)
-            if (standIsUnlocked != userHasCycle) {
-                NavProvider.addLogEntry("Stand reports that it ${if (standIsUnlocked) "does not have" else "has"} a cycle, if this is false, please report this by clicking here")
-                throw Error("Stand reports that it ${if (standIsUnlocked) "does not have" else "has"} a cycle, if this is false, please report this by clicking here")
             }
             val standStatusToken = Stand.getToken(socket)
             val cloudToken = CloudFunctions.token(standStatusToken)
