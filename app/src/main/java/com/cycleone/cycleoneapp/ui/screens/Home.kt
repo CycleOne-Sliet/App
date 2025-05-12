@@ -120,7 +120,9 @@ class Home {
         }
 
         val coroutineScope = rememberCoroutineScope()
-
+        var displayMap by remember {
+            mutableStateOf(false)
+        }
         Column(
             modifier = modifier
                 .fillMaxSize(),
@@ -224,6 +226,7 @@ class Home {
                                     Log.d("location", it.toString())
                                     val location = mapDisplay.locationToNormalizedCoords(it)
                                     Log.d("normLocation", location.toString())
+                                    displayMap = true
                                     coroutineScope.launch {
                                         mapDisplay.state.scrollTo(
                                             0.0,
@@ -245,9 +248,12 @@ class Home {
                                     }
                                 }
                             }
-                            mapDisplay.Create(
-                                modifier = Modifier.fillMaxSize()
-                            )
+                            if(displayMap) {
+                                mapDisplay.Create(
+                                    modifier = Modifier.fillMaxSize()
+                                )
+
+                            }
                         } else {
 
                             Column {

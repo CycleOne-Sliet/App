@@ -80,6 +80,7 @@ import com.cycleone.cycleoneapp.ui.screens.OtpScreen
 import com.cycleone.cycleoneapp.ui.screens.Profile
 import com.cycleone.cycleoneapp.ui.screens.SignIn
 import com.cycleone.cycleoneapp.ui.screens.SignUp
+import com.cycleone.cycleoneapp.ui.screens.SplashScreen
 import com.cycleone.cycleoneapp.ui.screens.UnlockScreen
 import com.cycleone.cycleoneapp.ui.theme.CycleoneAppTheme
 import com.cycleone.cycleoneapp.ui.theme.monsterratFamily
@@ -113,12 +114,6 @@ data class DrawerPath(val name: String, val dest: String)
 
 @Composable
 fun BaseController(navController: NavHostController = rememberNavController()) {
-    val user = FirebaseAuth.getInstance().currentUser
-    val currentLocation = if (user == null) {
-        "/onboarding"
-    } else {
-        "/home"
-    }
     var showTopBar by remember {
         mutableStateOf(false)
     }
@@ -138,8 +133,13 @@ fun BaseController(navController: NavHostController = rememberNavController()) {
     ) { modifier ->
         NavHost(
             navController = navController,
-            startDestination = currentLocation,
+            startDestination = "/splash_screen"
         ) {
+            composable("/splash_screen") {
+                showTopBar = false
+                showBottomBar = false
+                SplashScreen().Create(navController)
+            }
             composable("/onboarding") {
                 showTopBar = false
                 showBottomBar = false
