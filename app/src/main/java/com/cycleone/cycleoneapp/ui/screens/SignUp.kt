@@ -53,8 +53,13 @@ import kotlinx.coroutines.tasks.await
 import kotlin.time.Duration.Companion.seconds
 
 
-fun CharSequence?.isValidEmail() =
-    !isNullOrEmpty() && Patterns.EMAIL_ADDRESS.matcher(this).matches()
+//fun CharSequence?.isValidEmail() =
+  //  !isNullOrEmpty() && Patterns.EMAIL_ADDRESS.matcher(this).matches()
+
+fun CharSequence?.isValidEmail(): Boolean {
+    val validEmailRegex = Regex("^[A-Za-z0-9._%+-]+@sliet\\.ac\\.in$")
+    return !isNullOrEmpty() && validEmailRegex.matches(this)
+}
 
 class SignUp {
 
@@ -151,6 +156,8 @@ class SignUp {
             } catch (e: Throwable) {
                 Log.e("firestore", "Error initializing Coins field", e)
             }
+
+
         }
 
 
@@ -178,7 +185,7 @@ class SignUp {
             LaunchedEffect(Unit) {
                 while (true) {
                     delay(3.seconds)
-                    navController.navigate("/home")
+                    navController.navigate("/phoneVerify_page")
                 }
             }
             Column(
@@ -264,6 +271,7 @@ class SignUp {
                         termsCondition,
                     )
                     accountCreated = true
+
                 }
                 Column {
                     Row(

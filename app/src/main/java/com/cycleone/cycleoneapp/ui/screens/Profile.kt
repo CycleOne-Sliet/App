@@ -81,6 +81,7 @@ class Profile {
                 user?.reload()
                 user?.sendEmailVerification()
                     ?.addOnSuccessListener {
+                        Log.d("Profile", "Verification email sent")
                         Toast.makeText(
                             context,
                             "Verification Email sent",

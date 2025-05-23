@@ -14,11 +14,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "313643300650-6kp89qoit6dej6mg20m88p2l5235p2mn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cycleone.cycleoneapp",
+            "certificate_hash": "c9875fd8045cb55a240085b3161ac416709b3c2f"
+          }
+        },
+        {
           "client_id": "313643300650-cf3lpqte9hcufb59n9r4n2d4iupaspfg.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.cycleone.cycleoneapp",
             "certificate_hash": "56bad6524e627fdee9cbc3c59337ae54788723ff"
+          }
+        },
+        {
+          "client_id": "313643300650-nbnbtek5j69ria0i3109prctbhtfvq3m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cycleone.cycleoneapp",
+            "certificate_hash": "08c5f9485fe8db563294785f727d9f2ce928ade1"
           }
         },
         {
